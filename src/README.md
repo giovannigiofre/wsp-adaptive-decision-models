@@ -1,0 +1,1 @@
+Separate request normalization, model adapters, functional analysis, specialist paths, controller, fallback/verification, and telemetry. Avoid architecture-specific abstractions until upstream code is inspected.

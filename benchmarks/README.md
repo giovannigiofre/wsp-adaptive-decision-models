@@ -1,0 +1,1 @@
+Define independent decision workloads and repeated agentic traces. Document task families, labels, data provenance, splits, contamination checks, and scoring. Include isolated and sequential requests.

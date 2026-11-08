@@ -1,0 +1,23 @@
+project:
+  name: wsp-adaptive-decision-models
+  seed: 42
+model:
+  id: shenjunhao/OpenJev-4B
+  revision: TO_BE_PINNED
+  tokenizer_revision: TO_BE_VERIFIED
+  upstream_code: https://github.com/ejhshen/OpenJev
+  upstream_commit: TO_BE_PINNED
+  license_status: TO_BE_VERIFIED
+runtime:
+  preferred_device: auto
+  allow_mps: true
+  allow_cuda: true
+  allow_cpu: true
+  dtype: auto
+  deterministic: true
+evaluation:
+  dataset_revision: TO_BE_PINNED
+  independent_test_set_required: true
+  report_cold_start: true
+  report_warm_execution: true
+  metrics: [decision_quality, cost_per_correct_decision, latency_p50, latency_p95, throughput, peak_memory, fallback_rate, invalid_output_rate]
