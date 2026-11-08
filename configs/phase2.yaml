@@ -6,6 +6,11 @@ data:
   n_test_solutions: 44
   hidden_cells: [6, 7, 8, 9, 10, 11, 12]
   unique_solution_only: true
+  split_seed: 0
+  # distinct unique-solution puzzles drawn per (solution, k); fewer if not enough exist
+  train_per_solution_per_k: 20
+  val_per_solution_per_k: 1
+  test_per_solution_per_k: 4
 model:
   n_layers: 4
   d_model: 128
