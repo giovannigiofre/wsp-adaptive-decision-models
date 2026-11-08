@@ -2,14 +2,14 @@ phase: 1
 seed: 42
 model:
   id: GSAI-ML/LLaDA-8B-Instruct
-  revision: TO_BE_PINNED
+  revision: 08b83a6feb34df1a6011b80c3c00c7563e963b07
   trust_remote_code: true
   dtype: bfloat16
 upstream:
   llada_repo: https://github.com/ML-GSAI/LLaDA
-  llada_commit: TO_BE_PINNED
+  llada_commit: 9182493720ed723ef8031210d85959364e51cbe0   # generate.py copied from here
   d1_repo: https://github.com/dllm-reasoning/d1
-  d1_commit: TO_BE_PINNED
+  d1_commit: faf85d6dcea40477c722c467023c73b08a46cb82      # prompts, scorers, data/phase1/*
 runtime:
   device: mps          # fallback: cpu
   batch_size: 1
