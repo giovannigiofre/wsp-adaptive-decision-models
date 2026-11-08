@@ -1,5 +1,14 @@
+torch>=2.4
+transformers  # pin to the version required by the LLaDA README
+accelerate
+datasets
+huggingface_hub
 numpy
 pandas
 pyyaml
 psutil
+matplotlib
+imageio
+scikit-learn
+tqdm
 pytest

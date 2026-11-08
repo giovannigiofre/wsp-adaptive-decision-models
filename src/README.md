@@ -1,1 +1,1 @@
-Separate request normalization, model adapters, functional analysis, specialist paths, controller, fallback/verification, and telemetry. Avoid architecture-specific abstractions until upstream code is inspected.
+Code per phase: `phase1/` (LLaDA on MPS: loading, instrumented sampler, strategies, calibration, viz) and `phase2/` (toy Sudoku dLLM: data, model, diffusion training, sampler, wd1 RL). See the phase specs in `docs/`.

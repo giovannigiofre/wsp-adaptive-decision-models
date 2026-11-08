@@ -1,0 +1,30 @@
+phase: 1
+seed: 42
+model:
+  id: GSAI-ML/LLaDA-8B-Instruct
+  revision: TO_BE_PINNED
+  trust_remote_code: true
+  dtype: bfloat16
+upstream:
+  llada_repo: https://github.com/ML-GSAI/LLaDA
+  llada_commit: TO_BE_PINNED
+  d1_repo: https://github.com/dllm-reasoning/d1
+  d1_commit: TO_BE_PINNED
+runtime:
+  device: mps          # fallback: cpu
+  batch_size: 1
+  cache_dir: ~/dllm-cache
+sampler:
+  block_length: 32
+  temperature: 0.0
+  cfg_scale: 0.0
+tasks:
+  sudoku:    {n_examples: 100, gen_length: 64}
+  countdown: {n_examples: 100, gen_length: 64}
+  gsm8k:     {n_examples: 50,  gen_length: 256}
+grid:
+  strategies: [random, confidence, margin, entropy]
+  steps_fraction: [0.25, 0.5, 1.0]   # steps = fraction * gen_length
+calibration:
+  n_bins: 10
+  bootstrap_samples: 1000

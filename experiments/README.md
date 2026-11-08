@@ -1,1 +1,1 @@
-Each experiment needs a unique ID, hypothesis, checked-in config, fixed data split, baseline, and reproducible command. Keep large outputs outside Git; commit compact summaries only.
+One folder per experiment ID (e.g. `1.2/`, `2.3a/`) with a README: goal, exact command, config, hardware, torch version, dtype, seed, wall-clock time, result location, and a two-line "what this shows / does not show".

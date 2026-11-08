@@ -1,0 +1,42 @@
+phase: 2
+seeds: [0, 1, 2]
+data:
+  n_train_solutions: 200
+  n_val_solutions: 44
+  n_test_solutions: 44
+  hidden_cells: [6, 7, 8, 9, 10, 11, 12]
+  unique_solution_only: true
+model:
+  n_layers: 4
+  d_model: 128
+  n_heads: 4
+  dropout: 0.1
+diffusion_training:
+  t_min: 0.05
+  loss_weight: inverse_t
+  batch_size: 256
+  lr: 3.0e-4
+  max_steps: 20000
+  eval_every: 500
+  target_sft_solve_rate: [0.3, 0.6]   # pick a weak checkpoint in this range
+sampler:
+  strategies: [random, confidence, margin, entropy]
+  step_budgets: [1, 2, 4, 8, 16]
+  eval_temperature: 0.0
+rl:
+  algorithm: wd1
+  group_size: 8
+  batch_puzzles: 32
+  rollout_temperature: 1.0
+  rollout_strategy: confidence
+  rollout_steps: 8
+  tau: 1.0
+  prompt_mask_prob: 0.15
+  inner_steps: 4
+  lr: 1.0e-5
+  max_rl_steps: 500
+  ablations:
+    positive_only: true
+    tau_sweep: [0.5, 1.0, 2.0]
+runtime:
+  device: mps
