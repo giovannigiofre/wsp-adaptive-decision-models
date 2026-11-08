@@ -23,6 +23,13 @@ diffusion_training:
   lr: 3.0e-4
   max_steps: 20000
   eval_every: 500
+  dense_eval_until: 5000   # also eval + checkpoint every 100 steps early on, to catch the weak window
+  dense_eval_every: 100
+  eval_strategy: confidence
+  eval_sampler_steps: 8
+  warmup_steps: 200
+  weight_decay: 0.01
+  seed: 0
   target_sft_solve_rate: [0.3, 0.6]   # pick a weak checkpoint in this range
 sampler:
   strategies: [random, confidence, margin, entropy]
