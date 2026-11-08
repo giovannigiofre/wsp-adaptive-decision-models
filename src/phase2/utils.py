@@ -18,6 +18,24 @@ def load_cfg(path: str = "configs/phase2.yaml") -> dict:
         return yaml.safe_load(f)
 
 
+def apply_overrides(cfg: dict, sets: list[str] | None) -> dict:
+    """`--set diffusion_training.lr=1e-3 model.pos_embedding=structured` style overrides."""
+    for s in sets or []:
+        key, val = s.split("=", 1)
+        d = cfg
+        *parents, last = key.split(".")
+        for p in parents:
+            d = d[p]
+        v = yaml.safe_load(val)
+        if isinstance(v, str):  # YAML 1.1 reads "1e-3" as a string
+            try:
+                v = float(v)
+            except ValueError:
+                pass
+        d[last] = v
+    return cfg
+
+
 def seed_all(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)

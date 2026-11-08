@@ -16,6 +16,9 @@ model:
   d_model: 128
   n_heads: 4
   dropout: 0.1
+  # learned 16-position embedding + learned row/column/box embeddings (the spec's optional 2D embedding).
+  # The plain learned-position model plateaued at ~14% val solve after 20k steps (results/phase2/sft_attempts/).
+  pos_embedding: structured
 diffusion_training:
   t_min: 0.05
   loss_weight: inverse_t
@@ -23,8 +26,8 @@ diffusion_training:
   lr: 3.0e-4
   max_steps: 20000
   eval_every: 500
-  dense_eval_until: 5000   # also eval + checkpoint every 100 steps early on, to catch the weak window
-  dense_eval_every: 100
+  dense_eval_until: 1000   # also eval + checkpoint every 10 steps early on: the weak window is narrow
+  dense_eval_every: 10
   eval_strategy: confidence
   eval_sampler_steps: 8
   warmup_steps: 200

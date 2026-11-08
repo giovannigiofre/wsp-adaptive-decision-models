@@ -21,7 +21,7 @@ import torch.nn.functional as F
 from .data import PuzzleSet, build_datasets, digits_to_tokens
 from .evaluate import solve_rate
 from .model import build_model, n_params
-from .utils import CACHE, env_record, get_device, load_cfg, seed_all
+from .utils import CACHE, apply_overrides, env_record, get_device, load_cfg, seed_all
 
 
 def diffusion_loss(model, ps: PuzzleSet, t_min: float, gen: torch.Generator | None = None) -> torch.Tensor:
@@ -56,8 +56,9 @@ def main():
     ap.add_argument("--device", default=None)
     ap.add_argument("--out", default="results/phase2")
     ap.add_argument("--ckpt-dir", default=str(CACHE / "sft"))
+    ap.add_argument("--set", nargs="*", default=[], help="config overrides key.sub=value")
     a = ap.parse_args()
-    cfg = load_cfg(a.config)
+    cfg = apply_overrides(load_cfg(a.config), a.set)
     tc = cfg["diffusion_training"]
     max_steps = a.max_steps or tc["max_steps"]
     dev = get_device(a.device or cfg["runtime"]["device"])
@@ -119,7 +120,7 @@ def main():
     sel = {"weak_step": int(pick.step), "weak_val_solve": float(pick.val_solve), "rule": rule,
            "full_step": max_steps, "full_val_solve": float(df.iloc[-1].val_solve),
            "eval_sampler": f"{ev_strategy}, S={ev_steps}, greedy", "n_params": n_params(model),
-           "wall_clock_s": wall, "env": env_record(dev), "seed": seed, "ckpt_dir": str(ck)}
+           "wall_clock_s": wall, "overrides": a.set, "env": env_record(dev), "seed": seed, "ckpt_dir": str(ck)}
     json.dump(sel, open(out / "sft_selection.json", "w"), indent=2)
     print(json.dumps(sel, indent=2))
 
