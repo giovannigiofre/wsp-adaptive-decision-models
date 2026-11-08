@@ -1,5 +1,5 @@
 torch>=2.4
-transformers  # pin to the version required by the LLaDA README
+transformers==4.38.2  # required by LLaDA README (model code uses trust_remote_code)
 accelerate
 datasets
 huggingface_hub
@@ -12,3 +12,7 @@ imageio
 scikit-learn
 tqdm
 pytest
+Pillow
+nbformat
+nbconvert
+jupyter  # for notebooks/

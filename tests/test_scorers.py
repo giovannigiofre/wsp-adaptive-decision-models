@@ -50,3 +50,12 @@ def test_data_files_load():
     assert len(tasks.load_task("countdown")) == 256
     items = tasks.subsample(tasks.load_task("sudoku"), 10, seed=42)
     assert items == tasks.subsample(tasks.load_task("sudoku"), 10, seed=42)
+
+
+def test_ece_auroc():
+    import numpy as np
+    from src.phase1.calibration import auroc, ece
+    conf = np.array([0.9, 0.9, 0.1, 0.1])
+    assert abs(ece(conf, np.array([1, 1, 0, 0])) - 0.1) < 1e-9
+    assert auroc(conf, np.array([1, 1, 0, 0])) == 1.0
+    assert np.isnan(auroc(conf, np.array([1, 1, 1, 1])))
