@@ -16,13 +16,14 @@ This is **not** a research paper and makes no novelty claims. The goal is to lea
 Overall plan, timeline and deliverables: [docs/PLAN.md](docs/PLAN.md). Reading list: [docs/REFERENCES.md](docs/REFERENCES.md).
 
 ## Status
-Planning stage. No results yet.
+Phase 1 and phase 2 have both run end to end (phase 1 on pilot-sized samples). Start with [results/REPORT.md](results/REPORT.md), then the executed notebooks `notebooks/phase1_llada.ipynb` and `notebooks/phase2_sudoku_wd1.ipynb`.
 
 ## Structure
 - `docs/` plan, phase specs, references. `docs/archive/wsp/` keeps the earlier WSP adaptive-decision-model notes.
 - `configs/` one YAML per phase.
 - `src/phase1/`, `src/phase2/` implementation.
 - `experiments/` one folder per experiment ID with the exact command and config used.
+- `notebooks/` executed walkthroughs per phase (load committed results, no 8B model reload).
 - `results/` compact summaries (CSV, small PNG/GIF). No weights, no large logs.
 - `scripts/` environment utilities.
 
