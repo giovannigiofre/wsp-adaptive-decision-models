@@ -49,3 +49,7 @@ order_policy:           # track D (3.4b): unmasking policy on the frozen denoise
   batch_puzzles: 32
   group_size: 8
   eval_every: 50
+conf_token:             # track C (3.3): stated-confidence token with a Brier-shaped reward
+  buckets: [0.125, 0.375, 0.625, 0.875]
+  head_lr: 1.0e-3       # learning rate of the new query vector and head (the denoiser keeps rl.lr)
+  probe_weight: 1.0     # weight of the expected-Brier loss in the `probe` reference

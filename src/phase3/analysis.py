@@ -145,7 +145,61 @@ def save(fig, exp: str, name: str):
     print("wrote", OUT / exp / name)
 
 
-EXPERIMENTS: dict = {}
+def at_steps(curves: pd.DataFrame, by: list[str], steps: list[int], col: str = "val_solve") -> pd.DataFrame:
+    """Seed mean and std of `col` at the given steps, one row per group."""
+    d = curves[curves.step.isin(steps)]
+    g = d.groupby(by + ["step"])[col].agg(["mean", "std"]).unstack("step")
+    g.columns = [f"{col}@{s}_{f}" for f, s in g.columns]
+    return g[sorted(g.columns, key=lambda k: (int(k.split("@")[1].split("_")[0]), k))].reset_index()
+
+
+WD1_VS_POS = [(1.0, "wd1 (τ=1)"), (0.0, "positive-only (w⁻=0)")]   # (beta, label); colours C[0], C[1]
+
+
+def exp_3_1a():
+    """Horizon: wd1 and positive-only for 2000 steps."""
+    exp = "3.1a"
+    c, r = load(exp)
+    fig, ax = plt.subplots(1, 3, figsize=(13, 3.4))
+    for i, (b, lab) in enumerate(WD1_VS_POS):
+        d = c[c.beta == b]
+        band(ax[0], d, "val_solve", C[i], lab)
+        band(ax[1], d, "val_solve_s1", C[i], lab)
+        band(ax[2], d[d.step > 0], "frac_skipped", C[i], lab)
+    for a in ax[:2]:
+        a.axvline(500, color="0.4", ls=":", lw=1)
+        a.set_ylim(-0.02, 1.02)
+    ax[0].annotate("phase 2 stopped here", (500, 0.02), xytext=(6, 0), textcoords="offset points", fontsize=8,
+                   color="0.3")
+    ax[0].set(xlabel="RL step", ylabel="val solve rate (greedy, S=8)", title="Validation, 8 unmasking steps")
+    ax[1].set(xlabel="RL step", ylabel="val solve rate (greedy, S=1)", title="Validation, one shot")
+    ax[2].set(xlabel="RL step", ylabel="share of groups skipped (25-step mean)",
+              title="Groups with equal rewards (no signal)", ylim=(-0.02, 1.02))
+    ax[0].legend(loc="lower right", fontsize=8)
+    save(fig, exp, "horizon.png")
+    r["variant"] = r.beta.map(dict(WD1_VS_POS))
+    c["variant"] = c.beta.map(dict(WD1_VS_POS))
+    table = at_steps(c, ["variant"], [500, 1000, 1500, 2000])
+    table.round(4).to_csv(OUT / exp / "val_by_step.csv", index=False)
+    summ = seed_table(r, ["variant"])
+    summ.round(4).to_csv(OUT / exp / "summary.csv", index=False)
+    m = c.groupby(["variant", "step"]).val_solve.mean().unstack("variant")
+    close = ((m - m.loc[2000]).abs() <= 0.02).all(axis=1)
+    first = int(close[close[::-1].cumprod()[::-1].astype(bool)].index.min())   # stays within 0.02 from here on
+    first_any = int(close[close].index.min())
+    horizon = {"first_step_within_0.02_of_step_2000": first_any, "first_step_staying_within_0.02": first,
+               "rule_horizon": int(-(-first_any // 500) * 500)}
+    json.dump(horizon, open(OUT / exp / "horizon.json", "w"), indent=2)
+    late = c[c.step > 1500].groupby("variant")[["frac_skipped", "mean_valid", "logp_valid", "logp_invalid",
+                                                "pred_entropy", "grad_norm"]].mean()
+    for name, df in (("val by step", table), ("final (step 2000)", summ), ("steps 1501-2000", late.reset_index())):
+        print(f"--- {name}\n{df.round(3).to_string(index=False)}")
+    print(r[["variant", "seed", "final_val", "final_test", "final_test_s1", "min_val", "min_val_step",
+             "wall_clock_s"]].sort_values(["variant", "seed"]).round(3).to_string(index=False))
+    print(horizon)
+
+
+EXPERIMENTS: dict = {"3.1a": exp_3_1a}
 
 
 def main():
