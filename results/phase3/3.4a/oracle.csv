@@ -1,0 +1,11 @@
+split,order,n,solve_rate,ci_lo,ci_hi
+val,random,305,0.1377,0.0984,0.177
+val,confidence,305,0.5508,0.4951,0.6066
+val,margin,305,0.5344,0.4787,0.5902
+val,entropy,305,0.4164,0.3639,0.4721
+val,oracle,305,0.9902,0.977,1.0
+test,random,1194,0.1441,0.1248,0.1642
+test,confidence,1194,0.5595,0.5302,0.5879
+test,margin,1194,0.5385,0.5101,0.567
+test,entropy,1194,0.4615,0.433,0.4891
+test,oracle,1194,0.9841,0.9765,0.9908
