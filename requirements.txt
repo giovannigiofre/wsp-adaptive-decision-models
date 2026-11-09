@@ -12,3 +12,6 @@ imageio
 scikit-learn
 tqdm
 pytest
+nbformat  # phase 2 notebook build/execute (already in venv: 5.11.1)
+nbconvert  # 7.17.2
+ipykernel  # 7.4.0
