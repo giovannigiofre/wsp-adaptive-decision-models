@@ -6,7 +6,8 @@ The order of random draws matches phase2.rl_wd1 (puzzle indices, rollouts, promp
 `--set rl.objective_params.beta=1` and `=0` reproduce phase 2's wd1 and positive-only runs up to MPS
 non-determinism. Data, model and sampler come from the phase 2 config named in `base_config`.
 
-Resumable (state.pt every eval), one CSV row per step.
+Resumable (state.pt every eval), one CSV row per step. With `--exp ID` the per-step logs stay in the
+local cache and `python -m phase3.analysis compact ID` writes one row per evaluation to results/phase3/ID/.
 
 PYTHONPATH=src python -m phase3.rl --seed 0
 PYTHONPATH=src python -m phase3.rl --seed 0 --set rl.objective_params.beta=0
@@ -88,9 +89,12 @@ def main():
     ap.add_argument("--set", nargs="*", default=[], help="overrides, e.g. rl.objective_params.beta=0")
     ap.add_argument("--init", default=None, help="checkpoint path; default is init.checkpoint in the config")
     ap.add_argument("--device", default=None)
+    ap.add_argument("--exp", default=None, help="experiment id, e.g. 3.1a: per-step logs and checkpoints go "
+                    "to the local cache under that id; `phase3.analysis compact` writes the committed summary")
     ap.add_argument("--out", default="results/phase3/rl")
     ap.add_argument("--ckpt-dir", default=str(CACHE / "rl"))
     ap.add_argument("--tag", default="")
+    ap.add_argument("--force", action="store_true", help="rerun even if the run's summary JSON exists")
     a = ap.parse_args()
     cfg = apply_overrides(load_cfg(a.config), a.set)
     base = load_cfg(cfg["base_config"])
@@ -99,7 +103,12 @@ def main():
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
     dev = get_device(a.device or base["runtime"]["device"])
     name = run_name(rc, a.seed, a.tag)
+    if a.exp:
+        a.out, a.ckpt_dir = str(CACHE / a.exp / "logs"), str(CACHE / a.exp / "ckpt")
     out, ck = Path(a.out), Path(a.ckpt_dir) / name
+    if (out / f"{name}.json").exists() and not a.force:
+        print(f"skip {name}: already finished", flush=True)
+        return
     out.mkdir(parents=True, exist_ok=True)
     ck.mkdir(parents=True, exist_ok=True)
 
@@ -186,7 +195,7 @@ def main():
     final_val, final_val_s1 = evaluate(val)
     final_test, final_test_s1 = evaluate(test)
     summ = {"name": name, "objective": rc["objective"], "objective_params": rc["objective_params"],
-            "reward": rc["reward"], "seed": a.seed, "lr": rc["lr"], "steps": steps, "init": str(init),
+            "reward": rc["reward"], "seed": a.seed, "tag": a.tag, "lr": rc["lr"], "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,
             "final_val_s1": final_val_s1, "final_test_s1": final_test_s1,
