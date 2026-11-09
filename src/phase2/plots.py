@@ -85,7 +85,7 @@ def _band(ax, d, col, color, label, smooth=1):
     piv = d.pivot_table(index="step", columns="seed", values=col).dropna()
     if smooth > 1:
         piv = piv.rolling(smooth, min_periods=1).mean()
-    m, s = piv.mean(1), piv.std(1)
+    m, s = piv.mean(axis=1), piv.std(axis=1)
     ax.plot(piv.index, m, color=color, label=f"{label} (n={piv.shape[1]} seeds)")
     ax.fill_between(piv.index, m - s, m + s, color=color, alpha=0.18, lw=0)
 
