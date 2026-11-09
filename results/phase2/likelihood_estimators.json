@@ -1,0 +1,34 @@
+{
+  "sft_weak": {
+    "n": 256,
+    "frac_correct": 0.28515625,
+    "sec_sequential": 0.1657869815826416,
+    "sec_one_step": 0.0008411407470703125,
+    "pearson_one_step_p0": 0.7997185309925614,
+    "spearman_one_step_p0": 0.8551930753035348,
+    "pearson_percell_one_step_p0": 0.6118786809864123,
+    "pearson_one_step_p015": 0.7551596886089532,
+    "spearman_one_step_p015": 0.8009468740629359,
+    "pearson_percell_one_step_p015": 0.48295309480075926,
+    "pearson_one_step_p015_avg16": 0.8161006215372764,
+    "spearman_one_step_p015_avg16": 0.8561730537631486,
+    "pearson_percell_one_step_p015_avg16": 0.6026362021541257,
+    "mean_seq_minus_one_step_p0": 2.753927707672119
+  },
+  "rl_best": {
+    "n": 256,
+    "frac_correct": 0.71875,
+    "sec_sequential": 0.07465481758117676,
+    "sec_one_step": 0.0006318092346191406,
+    "pearson_one_step_p0": 0.7117160194010452,
+    "spearman_one_step_p0": 0.7947762942224794,
+    "pearson_percell_one_step_p0": 0.6506786403264718,
+    "pearson_one_step_p015": 0.6364298135973503,
+    "spearman_one_step_p015": 0.6947601867113122,
+    "pearson_percell_one_step_p015": 0.5088365377395706,
+    "pearson_one_step_p015_avg16": 0.7186543762085881,
+    "spearman_one_step_p015_avg16": 0.8037554311076648,
+    "pearson_percell_one_step_p015_avg16": 0.6508477269448854,
+    "mean_seq_minus_one_step_p0": 4.6315083503723145
+  }
+}
