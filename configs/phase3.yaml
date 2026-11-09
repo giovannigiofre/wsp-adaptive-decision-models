@@ -30,7 +30,7 @@ rl:
   reward: binary         # binary | graded
   ref_mix: 0.0           # > 0: rollouts from (1 - ref_mix) * current + ref_mix * frozen-start logits
   ref_kl: 0.0            # > 0: weighted objectives get a per-cell KL penalty to the frozen start (not upstream wd1)
-  likelihood: onestep    # onestep | sequential (fixed-order chain rule, 16 passes; weighted objectives only)
+  likelihood: onestep    # onestep | sequential (fixed-order chain rule, 16 passes) | trajectory (chain rule along the rollout's own order); weighted objectives only
   # Everything below matches configs/phase2.yaml `rl:` (grad_clip and eval_every were code defaults there).
   group_size: 8
   batch_puzzles: 32
