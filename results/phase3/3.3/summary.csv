@@ -1,0 +1,5 @@
+arm,solve_mean,solve_std,base_rate_brier_mean,base_rate_brier_std,q_expected_brier_mean,q_expected_brier_std,q_expected_ece_mean,q_expected_ece_std,q_expected_auroc_mean,q_expected_auroc_std,q_stated_brier_mean,q_stated_brier_std,q_stated_ece_mean,q_stated_ece_std,implicit_brier_mean,implicit_brier_std,implicit_ece_mean,implicit_ece_std,implicit_auroc_mean,implicit_auroc_std
+"token first, probe",0.88,0.0138,0.1055,0.0106,0.1706,0.0035,0.255,0.0138,0.5601,0.0294,0.1706,0.0035,0.255,0.0138,0.1091,0.0123,0.1011,0.013,0.9201,0.0017
+"token first, rl",0.8738,0.0139,0.1101,0.0103,0.3591,0.0035,0.4988,0.0139,0.446,0.0099,0.3591,0.0035,0.4988,0.0139,0.1156,0.0123,0.1076,0.0137,0.8957,0.0115
+"token last, probe",0.8819,0.0082,0.1041,0.0063,0.2787,0.1266,0.4789,0.1262,0.9342,0.0525,0.2787,0.1264,0.4769,0.1289,0.1072,0.0074,0.0997,0.0085,0.928,0.0051
+"token last, rl",0.8666,0.0096,0.1156,0.0071,0.2961,0.1059,0.4082,0.1444,0.5164,0.0574,0.2961,0.1059,0.4082,0.1444,0.1214,0.0092,0.1147,0.0091,0.9207,0.0285

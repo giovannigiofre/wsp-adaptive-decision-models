@@ -1,0 +1,33 @@
+{
+  "name": "oracle_hidden_zero_lr0.01_seed0",
+  "method": "oracle",
+  "features": "hidden",
+  "init": "zero",
+  "lr": 0.01,
+  "seed": 0,
+  "steps": 2000,
+  "denoiser": "/Users/giovannigiofre/dllm-cache/phase2/sft/sft_weak.pt",
+  "denoiser_sha256": "f47107867c03ea10be837dfbd137e6f95fdb7fa7c907b1b1a0f75f4f897bb497",
+  "code_commit": "e09bfe8",
+  "best_val": 0.66557377576828,
+  "best_step": 950,
+  "final_val": 0.5803278684616089,
+  "final_test": 0.6348408460617065,
+  "final_val_agree_conf": 0.7010233918128655,
+  "final_test_agree_conf": 0.6912151993980437,
+  "lin_weight_first3": [
+    2.49,
+    1.963,
+    1.927
+  ],
+  "wall_clock_s": 4700.935190200806,
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "cpu",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 2
+  },
+  "best_test": 0.6021775603294373
+}

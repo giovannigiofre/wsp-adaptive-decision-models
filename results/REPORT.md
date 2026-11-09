@@ -1,6 +1,6 @@
 # Diffusion language models on a MacBook: what I learned
 
-Everything below ran on one Apple M5 MacBook with 24 GB of unified memory, using PyTorch on MPS. No cloud GPUs were used. This is a learning exercise, not research: nothing here is a new method, and negative or contrary results are kept as they came out. Details, commands and per-step notes are in `results/phase1/SUMMARY.md`, `results/phase2/SUMMARY.md`, `experiments/<id>/README.md`, and the two executed notebooks in `notebooks/`.
+Everything below ran on one Apple M5 MacBook with 24 GB of unified memory, using PyTorch on MPS. No cloud GPUs were used. This is a learning exercise, not research: nothing here is a new method, and negative or contrary results are kept as they came out. Details, commands and per-step notes are in `results/phase1/SUMMARY.md`, `results/phase2/SUMMARY.md`, `results/phase3/SUMMARY.md`, `experiments/<id>/README.md`, and the three executed notebooks in `notebooks/`.
 
 ## 1. A real dLLM: LLaDA-8B-Instruct (inference only)
 
@@ -43,17 +43,42 @@ Positive-only collapses early in every seed (val 0.42 → ≈0.10 within 75–15
 
 ![calibration before/after](phase2/calibration_before_after.png)
 
+## 3. Playing with RL on the toy: what the phase 2 result was made of
+
+Phase 3 used the toy (about 240 training runs of 1–4 minutes) to find out why positive-only beat wd1, and to try a few things around wd1. Every experiment had a prediction committed before its runs; about a third of them were wrong, and they are listed in `results/phase3/SUMMARY.md`.
+
+**The phase 2 ranking survives longer training but not a different starting model.** At 2,000 steps positive-only still leads wd1, 0.997 to 0.907 (5 seeds). But the start used in phase 2 was a snapshot of a model about to become good. Ten SFT steps earlier, positive-only destroys the model (0.000 in all seeds) while wd1 reaches 0.88. From a model trained to convergence on only 10 of the 200 solutions, positive-only rises above wd1 and then collapses below its start; wd1 improves steadily.
+
+![starting model](phase3/3.1d/starting_model.png)
+
+**Positive-only collapses when its weights are flat.** With 0/1 rewards and τ = 1 about half of the positive weight falls on *invalid* rollouts, so the model reinforces its own mistakes. With selective weights (τ ≤ 0.1) the early collapse disappears. With a graded reward the weights are flat again at any τ tried and the collapse is permanent.
+
+**wd1 behaves like plain REINFORCE here, and what holds it back is the unbounded push down.** Its estimated likelihood of its own valid rollouts falls from −7 to −12 while it trains. Anything that bounds that push fixes it: a floor on the negative term (0.86 → 0.99), a small KL penalty to the starting model (0.86 → 0.98, the ingredient that made d1-style GRPO better than wd1), or any β < 1 on the negative term. β = 2 destroys the model. The upstream wd1 code has no reference term in its loss; mixing a reference policy into the sampling, the way it does, changed little here.
+
+**The simplest label-free objective was the most robust:** training with the ordinary SFT loss on the model's own valid rollouts reached about 100% from all three starting models. That depends on two features of the toy: a valid grid is always a correct one, and valid rollouts exist from the start.
+
+![objectives](phase3/3.2/objectives.png)
+
+**Unmasking order has a large headroom that a small learned policy barely touches.** With the frozen weak denoiser and one cell per step, an oracle that knows the solution solves 0.98 of the test puzzles, the confidence rule 0.56. RL on the validity reward rediscovers the confidence rule from a random order in about 50 steps; given the denoiser's hidden state it reaches 0.67. A head trained *with* the solutions does no better, and the learned policy does not transfer to other denoisers.
+
+**A stated-confidence token learns to check its own answer, but only with a stationary target.** Trained together with the grid, it locked onto one value and stopped exploring; a two-parameter recalibration of the model's existing confidence was far better (Brier 0.067 against 0.128 raw). On a frozen model, the same token trained from the Brier-shaped reward alone reached a Brier score of 0.03–0.05 by learning to verify the completed grid. Read from the puzzle alone, it states the base rate.
+
 ## What surprised me
 - How close LLaDA's default decoding is to left-to-right generation.
 - That fewer denoising steps cost almost nothing at these sizes. Confidence-based adaptive step budgets look like the obvious next thing to try.
 - That LLaDA's token confidence can be actively misleading (the Sudoku zeros).
 - That the positive-only ablation won in the end on the toy task, despite collapsing early.
+- That the explanation was so mechanical: flat weights, an unbounded push down, and one lucky starting snapshot. Changing any one of them changes the ranking.
+- That plain self-training on one's own valid outputs beat every RL objective on the toy.
+- That an oracle unmasking order solves 98% of the puzzles the weak model "cannot" solve.
 
 ## Limitations
 - Phase 1 samples are tiny, GSM8K used 128-token answers instead of 256, and the d1/paper settings were not matched. Phase 1 numbers are not comparable to published ones.
 - Phase 2 is a toy: 4×4 only, binary rewards, no KL term, one hyper-parameter setting, 3 seeds.
 - MPS is not bit-deterministic, and timings were taken on a shared machine (phases 1 and 2 ran concurrently, plus a Docker VM).
+- Phase 3 is the same toy with 3 seeds per setting, one hyper-parameter setting, a one-step likelihood proxy and 1,500-step runs. Its findings are about this task; which of them carry over to a pretrained dLLM with sparse, imperfect rewards is not tested here.
 
 ## Reproduce
 - Phase 1: `scripts/run_phase1.sh`. The grid is resumable; raise `N_SUDOKU`/`N_COUNTDOWN`/`N_GSM8K` to extend the same nested samples. The full spec sizes need roughly 30+ h on this Mac.
 - Phase 2: the commands in `experiments/2.*/README.md` and `scripts/run_phase2_rl.sh`.
+- Phase 3: `bash scripts/run_phase3.sh <experiment id>` for each id in `experiments/3.*/README.md`, then `python -m phase3.analysis <id>`.

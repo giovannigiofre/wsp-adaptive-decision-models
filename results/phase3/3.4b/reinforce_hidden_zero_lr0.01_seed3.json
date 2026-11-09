@@ -1,0 +1,33 @@
+{
+  "name": "reinforce_hidden_zero_lr0.01_seed3",
+  "method": "reinforce",
+  "features": "hidden",
+  "init": "zero",
+  "lr": 0.01,
+  "seed": 3,
+  "steps": 2000,
+  "denoiser": "/Users/giovannigiofre/dllm-cache/phase2/sft/sft_weak.pt",
+  "denoiser_sha256": "f47107867c03ea10be837dfbd137e6f95fdb7fa7c907b1b1a0f75f4f897bb497",
+  "code_commit": "3a81402",
+  "best_val": 0.6819671988487244,
+  "best_step": 1900,
+  "final_val": 0.6557376980781555,
+  "final_test": 0.6398659944534302,
+  "final_val_agree_conf": 0.7492690058479532,
+  "final_test_agree_conf": 0.7524454477050414,
+  "lin_weight_first3": [
+    10.304,
+    10.653,
+    7.672
+  ],
+  "wall_clock_s": 4391.697918176651,
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "cpu",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 2
+  },
+  "best_test": 0.6901172399520874
+}

@@ -1,0 +1,109 @@
+denoiser,order,seed,test_solve,agree_conf
+sft100,confidence rule,-1,0.1692,
+sft100,random rule,-1,0.0444,
+sft100,oracle,-1,0.8668,
+sft100,"policy probs, zero start",0,0.1709,0.8467
+sft100,"policy probs, zero start",1,0.17,0.8449
+sft100,"policy probs, zero start",2,0.17,0.8449
+sft100,"policy probs, zero start",3,0.17,0.8438
+sft100,"policy probs, zero start",4,0.17,0.8463
+sft100,"policy hidden, zero start",0,0.1064,0.5199
+sft100,"policy hidden, zero start",1,0.0938,0.4795
+sft100,"policy hidden, zero start",2,0.0695,0.398
+sft100,"policy hidden, zero start",3,0.0787,0.4897
+sft100,"policy hidden, zero start",4,0.0829,0.4694
+sft100,"policy hidden, confidence start",0,0.0988,0.5023
+sft100,"policy hidden, confidence start",1,0.1005,0.4788
+sft100,"policy hidden, confidence start",2,0.0938,0.5018
+sft100,"policy hidden, confidence start",3,0.1097,0.5002
+sft100,"policy hidden, confidence start",4,0.0804,0.4755
+sft120,confidence rule,-1,0.5595,
+sft120,random rule,-1,0.1474,
+sft120,oracle,-1,0.9841,
+sft120,"policy probs, zero start",0,0.5662,0.9665
+sft120,"policy probs, zero start",1,0.5662,0.9666
+sft120,"policy probs, zero start",2,0.5662,0.967
+sft120,"policy probs, zero start",3,0.5662,0.9651
+sft120,"policy probs, zero start",4,0.567,0.9646
+sft120,"policy hidden, zero start",0,0.6709,0.7749
+sft120,"policy hidden, zero start",1,0.6734,0.7699
+sft120,"policy hidden, zero start",2,0.4749,0.6071
+sft120,"policy hidden, zero start",3,0.6901,0.7582
+sft120,"policy hidden, zero start",4,0.665,0.7662
+sft120,"policy hidden, confidence start",0,0.6918,0.7854
+sft120,"policy hidden, confidence start",1,0.67,0.7942
+sft120,"policy hidden, confidence start",2,0.6516,0.7608
+sft120,"policy hidden, confidence start",3,0.6508,0.8014
+sft120,"policy hidden, confidence start",4,0.6508,0.7868
+sft130,confidence rule,-1,0.6809,
+sft130,random rule,-1,0.1901,
+sft130,oracle,-1,0.9916,
+sft130,"policy probs, zero start",0,0.6826,0.983
+sft130,"policy probs, zero start",1,0.6834,0.9832
+sft130,"policy probs, zero start",2,0.6834,0.9831
+sft130,"policy probs, zero start",3,0.6826,0.9818
+sft130,"policy probs, zero start",4,0.6843,0.9821
+sft130,"policy hidden, zero start",0,0.6583,0.8072
+sft130,"policy hidden, zero start",1,0.6533,0.8068
+sft130,"policy hidden, zero start",2,0.5,0.5973
+sft130,"policy hidden, zero start",3,0.6499,0.7768
+sft130,"policy hidden, zero start",4,0.6441,0.7908
+sft130,"policy hidden, confidence start",0,0.6374,0.8077
+sft130,"policy hidden, confidence start",1,0.6499,0.8092
+sft130,"policy hidden, confidence start",2,0.6583,0.7778
+sft130,"policy hidden, confidence start",3,0.6466,0.7983
+sft130,"policy hidden, confidence start",4,0.6876,0.8022
+wd1_seed0,confidence rule,-1,0.9188,
+wd1_seed0,random rule,-1,0.3099,
+wd1_seed0,oracle,-1,1.0,
+wd1_seed0,"policy probs, zero start",0,0.9213,0.9966
+wd1_seed0,"policy probs, zero start",1,0.9213,0.9969
+wd1_seed0,"policy probs, zero start",2,0.9213,0.9968
+wd1_seed0,"policy probs, zero start",3,0.9213,0.9963
+wd1_seed0,"policy probs, zero start",4,0.9213,0.9967
+wd1_seed0,"policy hidden, zero start",0,0.9121,0.6026
+wd1_seed0,"policy hidden, zero start",1,0.871,0.5758
+wd1_seed0,"policy hidden, zero start",2,0.8191,0.4636
+wd1_seed0,"policy hidden, zero start",3,0.9079,0.5882
+wd1_seed0,"policy hidden, zero start",4,0.8794,0.5688
+wd1_seed0,"policy hidden, confidence start",0,0.9162,0.624
+wd1_seed0,"policy hidden, confidence start",1,0.9255,0.6368
+wd1_seed0,"policy hidden, confidence start",2,0.8417,0.5481
+wd1_seed0,"policy hidden, confidence start",3,0.8827,0.551
+wd1_seed0,"policy hidden, confidence start",4,0.8978,0.5878
+wd1_seed1,confidence rule,-1,0.9422,
+wd1_seed1,random rule,-1,0.3459,
+wd1_seed1,oracle,-1,1.0,
+wd1_seed1,"policy probs, zero start",0,0.9422,0.9953
+wd1_seed1,"policy probs, zero start",1,0.9422,0.9957
+wd1_seed1,"policy probs, zero start",2,0.9422,0.9953
+wd1_seed1,"policy probs, zero start",3,0.9422,0.9952
+wd1_seed1,"policy probs, zero start",4,0.9422,0.9952
+wd1_seed1,"policy hidden, zero start",0,0.9238,0.6293
+wd1_seed1,"policy hidden, zero start",1,0.9188,0.6146
+wd1_seed1,"policy hidden, zero start",2,0.8559,0.497
+wd1_seed1,"policy hidden, zero start",3,0.9104,0.5782
+wd1_seed1,"policy hidden, zero start",4,0.9062,0.6001
+wd1_seed1,"policy hidden, confidence start",0,0.9087,0.6116
+wd1_seed1,"policy hidden, confidence start",1,0.9162,0.6389
+wd1_seed1,"policy hidden, confidence start",2,0.8903,0.5634
+wd1_seed1,"policy hidden, confidence start",3,0.8995,0.5851
+wd1_seed1,"policy hidden, confidence start",4,0.9221,0.6072
+wd1_seed2,confidence rule,-1,0.9564,
+wd1_seed2,random rule,-1,0.3442,
+wd1_seed2,oracle,-1,1.0,
+wd1_seed2,"policy probs, zero start",0,0.959,0.9948
+wd1_seed2,"policy probs, zero start",1,0.9581,0.9955
+wd1_seed2,"policy probs, zero start",2,0.959,0.9949
+wd1_seed2,"policy probs, zero start",3,0.959,0.9945
+wd1_seed2,"policy probs, zero start",4,0.959,0.9948
+wd1_seed2,"policy hidden, zero start",0,0.9313,0.6021
+wd1_seed2,"policy hidden, zero start",1,0.9322,0.587
+wd1_seed2,"policy hidden, zero start",2,0.8819,0.4739
+wd1_seed2,"policy hidden, zero start",3,0.9121,0.5677
+wd1_seed2,"policy hidden, zero start",4,0.9171,0.5772
+wd1_seed2,"policy hidden, confidence start",0,0.933,0.5863
+wd1_seed2,"policy hidden, confidence start",1,0.9238,0.6324
+wd1_seed2,"policy hidden, confidence start",2,0.9179,0.555
+wd1_seed2,"policy hidden, confidence start",3,0.9246,0.5679
+wd1_seed2,"policy hidden, confidence start",4,0.938,0.5856

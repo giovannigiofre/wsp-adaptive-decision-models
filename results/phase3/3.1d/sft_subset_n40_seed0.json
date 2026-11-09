@@ -1,0 +1,27 @@
+{
+  "name": "sft_subset_n40_seed0",
+  "n_solutions": 40,
+  "n_puzzles": 5091,
+  "steps": 5000,
+  "seed": 0,
+  "final_val_solve": 0.9934425950050354,
+  "final_test_solve": 0.9958124160766602,
+  "val_solve_range_last_1000_steps": [
+    0.9934425950050354,
+    0.9934425950050354
+  ],
+  "final_seen_solutions_solve": 1.0,
+  "final_unseen_train_solve": 0.9934425950050354,
+  "checkpoint": "/Users/giovannigiofre/dllm-cache/phase3/3.1d/sft/sft_subset_n40_seed0.pt",
+  "sha256": "733c06f3463a25277127db53c80c6b4a462951f3568baa6f45fc24a25bdb8411",
+  "code_commit": "002f5fb",
+  "wall_clock_s": 509.4178318977356,
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "mps",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 4
+  }
+}

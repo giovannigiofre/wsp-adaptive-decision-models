@@ -1,0 +1,59 @@
+phase: 3
+# Data, model and sampler settings are reused unchanged from phase 2.
+base_config: configs/phase2.yaml
+seeds: [0, 1, 2]
+init:
+  # Relative to the phase 2 cache (~/dllm-cache/phase2). Weak SFT snapshot: step 120, val 0.42, test 0.48.
+  checkpoint: sft/sft_weak.pt
+  sha256: f47107867c03ea10be837dfbd137e6f95fdb7fa7c907b1b1a0f75f4f897bb497
+upstream:
+  # Read for the form of the wd1 loss, the reference-policy sampling and the d1 GRPO loss. Local clone in
+  # ~/dllm-cache/upstream/wd1; nothing is copied verbatim (see src/phase3/objectives.py for attribution).
+  wd1_repo: https://github.com/xiaohangt/wd1
+  wd1_commit: 1a2e254fa8d258822a63942fd7eac680100b1789
+rl:
+  objective: wd1         # wd1 | reinforce | filtered | grpo | self_diffusion | supervised
+  objective_params: {}   # overrides of the chosen objective's defaults, e.g. --set rl.objective_params.beta=0
+  objective_defaults:
+    wd1:
+      tau: 1.0
+      beta: 1.0          # weight of the negative term: 1 = wd1, 0 = positive-only
+      floor: null        # if set, the negative term stops below this log p_hat (not in the paper)
+    reinforce:
+      normalize: false   # divide the advantage by the group std
+    filtered: {}
+    grpo:                # epsilon and kl as in wd1/train.yaml of the upstream repository
+      epsilon: 0.5
+      kl: 0.04
+    self_diffusion: {}
+    supervised: {}
+  reward: binary         # binary | graded
+  ref_mix: 0.0           # > 0: rollouts from (1 - ref_mix) * current + ref_mix * frozen-start logits
+  ref_kl: 0.0            # > 0: weighted objectives get a per-cell KL penalty to the frozen start (not upstream wd1)
+  likelihood: onestep    # onestep | sequential (fixed-order chain rule, 16 passes; weighted objectives only)
+  # Everything below matches configs/phase2.yaml `rl:` (grad_clip and eval_every were code defaults there).
+  group_size: 8
+  batch_puzzles: 32
+  rollout_temperature: 1.0
+  rollout_strategy: confidence
+  rollout_steps: 8
+  prompt_mask_prob: 0.15
+  inner_steps: 4
+  lr: 1.0e-5
+  grad_clip: 1.0
+  max_rl_steps: 500
+  eval_every: 25
+order_policy:           # track D (3.4b): unmasking policy on the frozen denoiser, one cell per step
+  width: 64
+  conf_scale: 10.0      # 'confidence' init: score = conf_scale * confidence
+  lr:                   # chosen on val in a one-seed pilot (experiments/3.4b/README.md)
+    probs: 3.0e-3
+    hidden: 1.0e-2
+  steps: 2000
+  batch_puzzles: 32
+  group_size: 8
+  eval_every: 50
+conf_token:             # track C (3.3): stated-confidence token with a Brier-shaped reward
+  buckets: [0.125, 0.375, 0.625, 0.875]
+  head_lr: 1.0e-3       # learning rate of the new query vector and head (the denoiser keeps rl.lr)
+  probe_weight: 1.0     # weight of the expected-Brier loss in the `probe` reference

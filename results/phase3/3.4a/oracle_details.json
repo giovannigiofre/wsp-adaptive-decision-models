@@ -1,0 +1,26 @@
+{
+  "never_stuck": 0.9840871095657349,
+  "stuck_at_step_0": 0.0,
+  "mean_correct_candidates_by_step": [
+    4.591,
+    4.506,
+    4.152,
+    3.752,
+    3.229,
+    2.564,
+    2.286,
+    2.045,
+    1.806,
+    1.508,
+    1.22,
+    0.978
+  ],
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "mps",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 4
+  }
+}

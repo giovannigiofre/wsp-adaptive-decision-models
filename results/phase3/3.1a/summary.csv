@@ -1,0 +1,3 @@
+variant,n,final_val_mean,final_val_std,final_test_mean,final_test_std,final_test_s1_mean,final_test_s1_std,min_val_mean,min_val_std,min_val_step_median
+positive-only (w⁻=0),5,0.9967,0.0033,0.9968,0.0007,0.5893,0.0175,0.1121,0.0128,100.0
+wd1 (τ=1),5,0.9095,0.0207,0.9072,0.017,0.106,0.0084,0.4197,0.0,0.0

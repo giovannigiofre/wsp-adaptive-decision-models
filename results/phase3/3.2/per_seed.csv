@@ -1,0 +1,41 @@
+method,seed,final_val,final_test,final_test_s1,min_val,min_val_step
+REINFORCE,0,0.882,0.8693,0.0754,0.4197,0
+REINFORCE,1,0.9016,0.8794,0.0905,0.4197,0
+REINFORCE,2,0.9049,0.8911,0.0779,0.4197,0
+REINFORCE,3,0.8885,0.8844,0.0821,0.4197,0
+REINFORCE,4,0.882,0.8936,0.0779,0.4197,0
+"REINFORCE, normalised",0,0.8951,0.8928,0.0821,0.4197,0
+"REINFORCE, normalised",1,0.9213,0.8811,0.0771,0.4197,0
+"REINFORCE, normalised",2,0.9115,0.8853,0.0762,0.4197,0
+"REINFORCE, normalised",3,0.8918,0.8643,0.0762,0.4197,0
+"REINFORCE, normalised",4,0.9016,0.8995,0.0879,0.4197,0
+d1-style GRPO,0,0.977,0.9816,0.1047,0.4197,0
+d1-style GRPO,1,0.9705,0.9707,0.1097,0.4197,0
+d1-style GRPO,2,0.9705,0.9807,0.093,0.4197,0
+d1-style GRPO,3,0.9705,0.974,0.0938,0.4197,0
+d1-style GRPO,4,0.9836,0.9757,0.0997,0.4197,0
+filtered imitation,0,1.0,0.9975,0.5511,0.4197,0
+filtered imitation,1,0.9934,0.9975,0.5804,0.4197,0
+filtered imitation,2,0.9902,0.9983,0.5704,0.4197,0
+filtered imitation,3,0.9967,0.9958,0.562,0.4197,0
+filtered imitation,4,0.9934,0.9966,0.5729,0.4197,0
+positive-only (w⁻=0),0,0.9934,0.9916,0.5745,0.1082,75
+positive-only (w⁻=0),1,0.9869,0.9983,0.5754,0.0951,100
+positive-only (w⁻=0),2,1.0,0.9975,0.5771,0.1213,150
+positive-only (w⁻=0),3,0.9967,0.9958,0.5854,0.1082,100
+positive-only (w⁻=0),4,0.9934,0.9975,0.5838,0.1279,150
+"self-training, SFT loss",0,1.0,0.9983,0.7203,0.4197,0
+"self-training, SFT loss",1,1.0,0.9992,0.7303,0.4197,0
+"self-training, SFT loss",2,1.0,0.9992,0.727,0.4197,0
+"self-training, SFT loss",3,1.0,0.9992,0.7194,0.4197,0
+"self-training, SFT loss",4,1.0,1.0,0.7303,0.4197,0
+supervised reference (labels),0,1.0,1.0,0.732,0.4197,0
+supervised reference (labels),1,1.0,1.0,0.7286,0.4197,0
+supervised reference (labels),2,1.0,1.0,0.732,0.4197,0
+supervised reference (labels),3,1.0,1.0,0.737,0.4197,0
+supervised reference (labels),4,1.0,1.0,0.7479,0.4197,0
+wd1 (τ=1),0,0.8885,0.8384,0.0712,0.4197,0
+wd1 (τ=1),1,0.8984,0.8626,0.0737,0.4197,0
+wd1 (τ=1),2,0.8984,0.8777,0.0879,0.4197,0
+wd1 (τ=1),3,0.8918,0.8585,0.0888,0.4197,0
+wd1 (τ=1),4,0.9049,0.8878,0.0863,0.4197,0
