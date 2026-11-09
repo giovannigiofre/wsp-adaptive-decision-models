@@ -56,7 +56,7 @@ First look at the new diagnostics (means over 3 seeds; observations only, to be 
 | wd1: one-step predictive entropy (nats, max 1.39) | 0.84 | 0.56 |
 | positive-only: one-step predictive entropy | 0.95 | 0.81 |
 
-- **Every update was clipped.** The gradient norm, averaged over the 4 inner steps, was above the clip threshold of 1.0 in all 3,000 RL steps (minimum 1.97, median 4.9 for wd1 and 7.5 for positive-only). So the two variants took steps of the same size and differed only in direction. This matters for the β sweep in 3.1c: scaling the loss will not change the step size.
+- **Every gradient was clipped.** The gradient norm, averaged over the 4 inner steps, was above the clip threshold of 1.0 in every RL step that made an update (2,999 of 3,000; one positive-only step had all groups skipped). Minimum 1.97, median 4.9 for wd1 and 7.5 for positive-only. So AdamW always received a gradient of norm 1, and the two variants differed in the direction of that gradient, not its size. This matters for the β sweep in 3.1c: β will change the direction only.
 - **One-shot solving (S = 1) improves much more under positive-only:** val solve rate at S = 1 ends at 0.24, against 0.06 for wd1. Both start at 0.00.
 
 **Shows:** the phase 3 trainer reproduces the phase 2 wd1 and positive-only runs, so later differences come from the objective or reward and not from the new code.
