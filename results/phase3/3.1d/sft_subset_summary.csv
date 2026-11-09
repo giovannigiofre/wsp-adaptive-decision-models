@@ -1,0 +1,6 @@
+name,n_solutions,n_puzzles,steps,final_val_solve,final_test_solve,final_seen_solutions_solve,final_unseen_train_solve,wall_clock_s,val_min_last_1000,val_max_last_1000,chosen
+sft_subset_n2_seed0,2,263,5000,0.0033,0.0017,1.0,0.0,543.6481,0.0033,0.0033,False
+sft_subset_n5_seed0,5,635,5000,0.0951,0.0318,1.0,0.0656,559.4222,0.0951,0.0951,False
+sft_subset_n10_seed0,10,1289,5000,0.6492,0.5896,1.0,0.6721,536.9445,0.6426,0.6557,True
+sft_subset_n20_seed0,20,2575,5000,0.9639,0.9724,1.0,0.9705,497.5245,0.9607,0.9639,False
+sft_subset_n40_seed0,40,5091,5000,0.9934,0.9958,1.0,0.9934,509.4178,0.9934,0.9934,False

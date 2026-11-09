@@ -1,0 +1,27 @@
+{
+  "name": "sft_subset_n5_seed0",
+  "n_solutions": 5,
+  "n_puzzles": 635,
+  "steps": 5000,
+  "seed": 0,
+  "final_val_solve": 0.09508197009563446,
+  "final_test_solve": 0.03182579576969147,
+  "val_solve_range_last_1000_steps": [
+    0.09508197009563446,
+    0.09508197009563446
+  ],
+  "final_seen_solutions_solve": 1.0,
+  "final_unseen_train_solve": 0.06557376682758331,
+  "checkpoint": "/Users/giovannigiofre/dllm-cache/phase3/3.1d/sft/sft_subset_n5_seed0.pt",
+  "sha256": "88c7f49741b8346eb643b54feb383c56ff7e3ff519983deb9b16d9ef640ae95b",
+  "code_commit": "002f5fb",
+  "wall_clock_s": 559.422208070755,
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "mps",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 4
+  }
+}

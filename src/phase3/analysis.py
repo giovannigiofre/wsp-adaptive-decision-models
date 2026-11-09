@@ -176,7 +176,7 @@ def exp_3_1a():
     ax[1].set(xlabel="RL step", ylabel="val solve rate (greedy, S=1)", title="Validation, one shot")
     ax[2].set(xlabel="RL step", ylabel="share of groups skipped (25-step mean)",
               title="Groups with equal rewards (no signal)", ylim=(-0.02, 1.02))
-    ax[0].legend(loc="lower right", fontsize=8)
+    ax[0].legend(loc="center right", fontsize=8)
     save(fig, exp, "horizon.png")
     r["variant"] = r.beta.map(dict(WD1_VS_POS))
     c["variant"] = c.beta.map(dict(WD1_VS_POS))
@@ -436,7 +436,8 @@ REFERENCE = ("supervised reference (labels)", "0.35")
 def exp_3_2():
     """wd1 next to simpler objectives."""
     exp = "3.2"
-    c, r = load(exp)
+    c, r = load_many("3.2", "3.1b")       # wd1 and positive-only at tau = 1, seeds 0-2, come from 3.1b
+    c, r = c[(c.exp == "3.2") | (c.tau == 1.0)], r[(r.exp == "3.2") | (r.tau == 1.0)]
     c["method"], r["method"] = c.apply(method, axis=1), r.apply(method, axis=1)
     fig, ax = plt.subplots(1, 3, figsize=(14, 3.6), gridspec_kw={"width_ratios": [1, 1, 1.1]})
     for a, fam, title in ((ax[0], CONTRAST, "Raise valid, lower invalid rollouts"),

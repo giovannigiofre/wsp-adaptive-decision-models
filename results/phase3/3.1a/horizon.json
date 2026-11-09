@@ -1,0 +1,5 @@
+{
+  "first_step_within_0.02_of_step_2000": 1450,
+  "first_step_staying_within_0.02": 1500,
+  "rule_horizon": 1500
+}
