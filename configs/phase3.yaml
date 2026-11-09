@@ -1,0 +1,26 @@
+phase: 3
+# Data, model and sampler settings are reused unchanged from phase 2.
+base_config: configs/phase2.yaml
+seeds: [0, 1, 2]
+init:
+  # Relative to the phase 2 cache (~/dllm-cache/phase2). Weak SFT snapshot: step 120, val 0.42, test 0.48.
+  checkpoint: sft/sft_weak.pt
+  sha256: f47107867c03ea10be837dfbd137e6f95fdb7fa7c907b1b1a0f75f4f897bb497
+rl:
+  objective: wd1
+  objective_params:
+    tau: 1.0
+    beta: 1.0          # weight of the negative term: 1 = wd1, 0 = positive-only
+  reward: binary
+  # Everything below matches configs/phase2.yaml `rl:` (grad_clip and eval_every were code defaults there).
+  group_size: 8
+  batch_puzzles: 32
+  rollout_temperature: 1.0
+  rollout_strategy: confidence
+  rollout_steps: 8
+  prompt_mask_prob: 0.15
+  inner_steps: 4
+  lr: 1.0e-5
+  grad_clip: 1.0
+  max_rl_steps: 500
+  eval_every: 25
