@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+from collections import defaultdict
 
 import matplotlib
 
@@ -96,7 +97,9 @@ def main():
             continue
         rs = [json.loads(l) for l in open(p)]
         full = max(r["steps"] for r in rs if r["gen_length"] == rs[0]["gen_length"])
-        recs[task] = [r for r in rs if r["strategy"] == "confidence" and r["steps"] == full]
+        sel = [r for r in rs if r["strategy"] == "confidence" and r["steps"] == full]
+        if sel:  # a partially finished grid may have no full-budget confidence rows yet
+            recs[task] = sel
 
     # ---------- answer-level
     fig, axes = plt.subplots(2, max(1, len(recs)), figsize=(4 * max(1, len(recs)), 7), constrained_layout=True,
@@ -162,6 +165,7 @@ def main():
                 axes[1].set_title("Cells by commit order within the answer\n(95% bootstrap CI)", fontsize=9)
             fig.savefig(out / "sudoku_token_level.png", dpi=80)
             plt.close(fig)
+            sudoku_cells_by_digit(recs["sudoku"], out)
 
     # ---------- early vs late, answer-level for all tasks: commit time of the answer span
     for task, rs in recs.items():
@@ -197,6 +201,26 @@ def main():
         print(m)
     for m in early_late:
         print(m)
+
+
+def sudoku_cells_by_digit(recs, out):
+    """Which digit the model wrote into each empty cell (from the extracted answer in the raw CSV),
+    with mean commit confidence and accuracy. Explains low/inverted AUROC when the model copies
+    the puzzle's '0's with high confidence."""
+    raw = {}
+    for r in csv.DictReader(open(REPO / "results/phase1/raw/sudoku.csv")):
+        raw[(r["id"], r["strategy"], int(r["steps"]))] = r["extracted"] or ""
+    by = defaultdict(list)
+    for r in recs:
+        ext = raw.get((r["id"], r["strategy"], r["steps"]), "")
+        for c in r["cells"] or []:
+            by[ext[c[0]] if c[0] < len(ext) else "?"].append((c[2], c[4]))
+    with open(out / "sudoku_cells_by_digit.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["digit_written", "n_cells", "mean_commit_conf", "cell_accuracy"])
+        for d, v in sorted(by.items(), key=lambda kv: -len(kv[1])):
+            v = np.array(v, float)
+            w.writerow([d, len(v), round(v[:, 0].mean(), 4), round(v[:, 1].mean(), 4)])
 
 
 if __name__ == "__main__":
