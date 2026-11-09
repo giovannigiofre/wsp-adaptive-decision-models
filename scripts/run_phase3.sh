@@ -50,9 +50,9 @@ main() {
       3.3)  for s in 0 1 2; do for p in last first; do for m in rl probe; do
               echo "-m phase3.conf_token train --exp 3.3 --seed $s --place $p --mode $m --set $hs"; done; done; done ;;
       3.4b) for s in 0 1 2 3 4; do for f in probs hidden; do for i in zero confidence; do
-              echo "-m phase3.order_policy train --exp 3.4b --seed $s --features $f --init $i"; done; done; done
+              echo "-m phase3.order_policy train --exp 3.4b --seed $s --features $f --init $i ${ORDER_ARGS:-}"; done; done; done
             for s in 0 1 2; do for f in probs hidden; do
-              echo "-m phase3.order_policy train --exp 3.4b --seed $s --features $f --init zero --teacher oracle"; done; done ;;
+              echo "-m phase3.order_policy train --exp 3.4b --seed $s --features $f --init zero --teacher oracle ${ORDER_ARGS:-}"; done; done ;;
       *) echo "unknown experiment $EXP" >&2; exit 1 ;;
     esac
   }

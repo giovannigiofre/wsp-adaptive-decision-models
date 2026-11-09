@@ -231,11 +231,11 @@ def exp_3_1b():
     for j, (b, lab, cmap) in enumerate([(1.0, "wd1", plt.cm.Blues), (0.0, "positive-only", plt.cm.Oranges)]):
         for t, col in zip(taus, ramp(cmap, len(taus))):
             band(ax[j], c[(c.beta == b) & (c.tau == t)], "val_solve", col, f"τ={t:g}")
-        ax[j].set(title=f"{lab}: validation by τ (darker = sharper weights)", xlabel="RL step",
+        ax[j].set(title=f"{lab}: validation by τ", xlabel="RL step",
                   ylabel="val solve rate (greedy, S=8)", ylim=(-0.02, 1.02))
-        ax[j].legend(fontsize=8, loc="lower right")
+        ax[j].legend(fontsize=8, loc="lower right", title="darker = sharper weights", title_fontsize=8)
     early = c[(c.step > 0) & (c.step <= 50)].groupby(["beta", "tau"]).w_pos_on_invalid.mean().reset_index()
-    for i, (b, lab) in enumerate(WD1_VS_POS):
+    for i, (b, lab) in enumerate([(1.0, "wd1"), (0.0, "positive-only")]):
         d = early[early.beta == b].sort_values("tau")
         ax[2].plot(d.tau, d.w_pos_on_invalid, marker="o", ms=5, color=C[i], label=lab)
     ax[2].set(xscale="log", xticks=taus, xticklabels=[f"{t:g}" for t in taus], xlabel="τ (log scale)",
@@ -243,12 +243,13 @@ def exp_3_1b():
               ylim=(-0.02, 0.6))
     ax[2].legend(fontsize=8)
     save(fig, exp, "tau_sweep.png")
-    r["variant"] = r.beta.map(dict(WD1_VS_POS))
+    names = {1.0: "wd1", 0.0: "positive-only"}
+    r["variant"] = r.beta.map(names)
     summ = seed_table(r, ["variant", "tau"], cols=("final_val", "final_test", "final_test_s1", "min_val"))
-    summ = summ.merge(early.assign(variant=early.beta.map(dict(WD1_VS_POS)))[["variant", "tau", "w_pos_on_invalid"]],
+    summ = summ.merge(early.assign(variant=early.beta.map(names))[["variant", "tau", "w_pos_on_invalid"]],
                       on=["variant", "tau"]).rename(columns={"w_pos_on_invalid": "w_pos_on_invalid_steps_1_50"})
     summ.round(4).to_csv(OUT / exp / "summary.csv", index=False)
-    w = summ[(summ.variant == dict(WD1_VS_POS)[1.0]) & (summ.tau < 1)]
+    w = summ[(summ.variant == "wd1") & (summ.tau < 1)]
     ties = w[w.final_val_mean >= w.final_val_mean.max() - 0.01]
     bt = {"best_tau": float(ties.tau.max()),
           "rule": "tau in {0.25, 0.1, 0.05} with the highest seed-mean final val solve rate for wd1; "
