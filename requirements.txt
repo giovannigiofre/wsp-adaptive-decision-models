@@ -10,6 +10,7 @@ psutil
 matplotlib
 imageio
 scikit-learn
+scipy  # Spearman rho in the phase-1 notebook
 tqdm
 pytest
 Pillow

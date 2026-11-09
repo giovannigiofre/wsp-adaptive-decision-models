@@ -45,26 +45,30 @@ for f in sorted((R / 'unmasking').glob('*_*.json')):
     pid = name.replace('_low_confidence', '').replace('_random', '')
     rhos = [spearmanr(np.arange(32), cs[b:b+32]).correlation for b in range(0, len(cs), 32)]
     rows.append({'id': pid, 'remasking': strat, 'mean within-block rho(position, commit step)': np.nanmean(rhos)})
-df = pd.DataFrame(rows); display(df.groupby('remasking').agg(['mean','std']))""")
+df = pd.DataFrame(rows); display(df.drop(columns='id').groupby('remasking').agg(['mean', 'min', 'max']))""")
 
 md(NARR["1.2"])
 code("""s = pd.read_csv(R / 'strategies.csv'); display(s)""")
 code("""for t in ['sudoku', 'countdown', 'gsm8k']:
     p = R / f'strategies_{t}.png'
     if p.exists(): display(Image(filename=str(p), width=480))""")
+code("""# paired over examples, averaged over the 3 step budgets: confidence minus each other strategy
+display(pd.read_csv(R / 'strategies_paired.csv'))""")
 md(NARR["1.2b"])
 
 md(NARR["1.3"])
 code("""display(pd.read_csv(R / 'calibration/metrics.csv'))
 p = R / 'calibration/early_vs_late.csv'
-if p.exists(): display(pd.read_csv(p))""")
+if p.exists(): display(pd.read_csv(p))
+display(pd.read_csv(R / 'calibration/sudoku_cells_by_digit.csv'))""")
 code("""for f in ['reliability_answer_level.png', 'sudoku_token_level.png']:
     p = R / 'calibration' / f
     if p.exists(): display(Image(filename=str(p), width=720))""")
 md(NARR["1.3b"])
 
 md(NARR["1.4"])
-code("""display(Markdown((R / 'SUMMARY.md').read_text()))""")
+code("""# image links in SUMMARY.md are relative to results/phase1/; rewrite them for the notebook folder
+display(Markdown((R / 'SUMMARY.md').read_text().replace('](', '](../results/phase1/')))""")
 
 nb = nbf.v4.new_notebook(cells=cells, metadata={"kernelspec": {"name": "python3", "display_name": "Python 3", "language": "python"}})
 (REPO / "notebooks").mkdir(exist_ok=True)
