@@ -19,3 +19,12 @@ def test_binary_reward():
     puzzle, sol, broken, other = _cases()
     r = REWARDS["binary"](torch.stack([sol, broken, other]), puzzle.repeat(3, 1))
     assert r.tolist() == [1.0, 0.0, 0.0] and r.dtype == torch.float32
+
+
+def test_graded_reward():
+    puzzle, sol, broken, other = _cases()
+    r = REWARDS["graded"](torch.stack([sol, broken, other]), puzzle.repeat(3, 1))
+    assert r[0] == 1.0 and r[2] == 0.0             # a changed given gives 0 even if the grid is valid
+    assert abs(r[1].item() - 9 / 12) < 1e-6        # one wrong cell breaks its row, column and box
+    assert ((REWARDS["graded"](torch.stack([sol, broken]), puzzle.repeat(2, 1)) == 1.0)
+            == REWARDS["binary"](torch.stack([sol, broken]), puzzle.repeat(2, 1)).bool()).all()

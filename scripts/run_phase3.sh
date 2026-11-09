@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Runs every RL run of one phase 3 experiment, a few at a time. Finished runs are skipped and
+# Runs every RL run of one phase 3 experiment, one after the other. Finished runs are skipped and
 # interrupted ones resume, so the script can simply be relaunched.
-# Usage (from the repo root): bash scripts/run_phase3.sh 3.1a [python]      JOBS=3 by default
+# Usage (from the repo root): bash scripts/run_phase3.sh 3.1a [python]
+# JOBS=1 by default: on MPS three runs in parallel took 3x longer in total than the same runs in sequence.
 set -euo pipefail
 EXP=$1
 PY=${2:-python}
@@ -15,5 +16,5 @@ runs() {  # one line of phase3.rl arguments per run
   esac
 }
 
-runs | xargs -P "${JOBS:-3}" -L 1 "$PY" -m phase3.rl --exp "$EXP"
+runs | xargs -P "${JOBS:-1}" -L 1 "$PY" -m phase3.rl --exp "$EXP"
 "$PY" -m phase3.analysis compact "$EXP"

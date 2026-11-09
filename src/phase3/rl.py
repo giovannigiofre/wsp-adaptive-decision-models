@@ -1,20 +1,26 @@
-"""Generic RL loop for the toy Sudoku dLLM with a pluggable objective and reward (phase 3.0).
+"""Generic RL loop for the toy Sudoku dLLM with a pluggable objective and reward (phase 3).
 
 Per RL step: B puzzles x G completions (same sampler settings as phase 2), reward from `rewards.py`,
-group weights from `objectives.py`, one-step mean-field log p_hat, mu inner gradient steps.
-The order of random draws matches phase2.rl_wd1 (puzzle indices, rollouts, prompt masks), so
-`--set rl.objective_params.beta=1` and `=0` reproduce phase 2's wd1 and positive-only runs up to MPS
-non-determinism. Data, model and sampler come from the phase 2 config named in `base_config`.
+objective from `objectives.py`, one-step mean-field log p_hat, mu inner gradient steps.
+For the weighted-likelihood objectives the order of random draws matches phase2.rl_wd1 (puzzle indices,
+rollouts, prompt masks), so the default config and `--set rl.objective_params.beta=0` reproduce phase 2's
+wd1 and positive-only runs. Data, model and sampler come from the phase 2 config named in `base_config`.
+
+`rl.ref_mix` > 0 samples the rollouts from mixed logits, (1 - ref_mix) * current + ref_mix * frozen start,
+which is how the reference policy enters the upstream wd1 code (github.com/xiaohangt/wd1, commit 1a2e254,
+wd1/trainers/rev_grpo_ref_pol_trainer.py, `generate`). The loss is unchanged, as upstream.
 
 Resumable (state.pt every eval), one CSV row per step. With `--exp ID` the per-step logs stay in the
 local cache and `python -m phase3.analysis compact ID` writes one row per evaluation to results/phase3/ID/.
 
 PYTHONPATH=src python -m phase3.rl --seed 0
 PYTHONPATH=src python -m phase3.rl --seed 0 --set rl.objective_params.beta=0
+PYTHONPATH=src python -m phase3.rl --seed 0 --exp 3.2 --set rl.objective=reinforce
 """
 from __future__ import annotations
 
 import argparse
+import copy
 import csv
 import hashlib
 import json
@@ -26,36 +32,48 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from phase2.data import batch_validity, build_datasets, digits_to_tokens
+from phase2.data import PuzzleSet, batch_validity, build_datasets, digits_to_tokens
 from phase2.evaluate import solve_rate
 from phase2.model import build_model
 from phase2.sampler import sample
+from phase2.train_diffusion import diffusion_loss
 from phase2.utils import CACHE as PHASE2_CACHE
 from phase2.utils import apply_overrides, env_record, get_device, load_cfg, seed_all
 
-from .objectives import OBJECTIVES, weight_diagnostics, weighted_loglik_loss
+from .objectives import KIND, WEIGHTED, advantages, grpo_loss, weight_diagnostics, weighted_loss
 from .rewards import REWARDS
 
 CACHE = Path(os.environ.get("PHASE3_CACHE", Path.home() / "dllm-cache" / "phase3"))
 FIELDS = ["step", "mean_reward", "mean_valid", "frac_skipped", "loss", "grad_norm", "w_entropy", "w_ess",
-          "w_pos_on_invalid", "logp_valid", "logp_invalid", "pred_entropy", "val_solve", "val_solve_s1",
-          "elapsed_s"]
+          "w_pos_on_invalid", "logp_valid", "logp_invalid", "pred_entropy", "clip_frac", "val_solve",
+          "val_solve_s1", "elapsed_s"]
+
+
+def prompt_mask(puzzles: torch.Tensor, p_mask: float, generator: torch.Generator | None = None) -> torch.Tensor:
+    """Given cells that are additionally masked in the likelihood estimate (d1/wd1 `p_mask_prompt`)."""
+    return (puzzles != 0) & (torch.rand(puzzles.shape, device=puzzles.device, generator=generator) < p_mask)
 
 
 def one_step_logprobs(model, puzzles: torch.Tensor, completions: torch.Tensor, p_mask: float = 0.0,
-                      generator: torch.Generator | None = None):
+                      generator: torch.Generator | None = None, extra: torch.Tensor | None = None):
     """Same input and random draw as phase2.rl_wd1.one_step_loglik, but returns the per-cell
-    log-probs (N,16,4) and the given mask so diagnostics can reuse the forward pass."""
+    log-probs (N,16,4) and the given mask so diagnostics can reuse the forward pass.
+    `extra` is a prompt mask drawn earlier (then no random draw happens here)."""
     given = puzzles != 0
-    extra = given & (torch.rand(puzzles.shape, device=puzzles.device, generator=generator) < p_mask)
+    if extra is None:
+        extra = prompt_mask(puzzles, p_mask, generator)
     inp = torch.where(given & ~extra, completions, torch.zeros_like(completions))
     return F.log_softmax(model(digits_to_tokens(inp)).float(), -1), given
 
 
+def cell_logp(logp: torch.Tensor, completions: torch.Tensor) -> torch.Tensor:
+    """(N,16) log p of each completion cell."""
+    return logp.gather(-1, (completions - 1).unsqueeze(-1)).squeeze(-1)
+
+
 def loglik(logp: torch.Tensor, completions: torch.Tensor, given: torch.Tensor) -> torch.Tensor:
     """(N,) one-step log p_hat: sum over non-given cells of log p(completion cell)."""
-    lp = logp.gather(-1, (completions - 1).unsqueeze(-1)).squeeze(-1)
-    return (lp * (~given)).sum(1)
+    return (cell_logp(logp, completions) * (~given)).sum(1)
 
 
 def predictive_entropy(logp: torch.Tensor, given: torch.Tensor) -> torch.Tensor:
@@ -64,10 +82,27 @@ def predictive_entropy(logp: torch.Tensor, given: torch.Tensor) -> torch.Tensor:
     return (ent * (~given)).sum() / (~given).sum()
 
 
+class MixedLogits(torch.nn.Module):
+    """Rollout policy with a reference model: logits = (1 - mix) * model + mix * reference."""
+
+    def __init__(self, model, ref, mix: float):
+        super().__init__()
+        self.model, self.ref, self.mix = model, ref, mix
+
+    def forward(self, tokens):
+        return (1 - self.mix) * self.model(tokens) + self.mix * self.ref(tokens)
+
+
+def objective_params(rc: dict) -> dict:
+    """Defaults of the chosen objective, updated with `rl.objective_params`."""
+    return {**rc["objective_defaults"][rc["objective"]], **rc["objective_params"]}
+
+
 def run_name(rc: dict, seed: int, tag: str = "") -> str:
-    params = "_".join(f"{k}{float(v):g}" for k, v in sorted(rc["objective_params"].items()))
-    reward = "" if rc["reward"] == "binary" else f"_{rc['reward']}"
-    return f"{rc['objective']}_{params}{reward}_seed{seed}{tag}"
+    params = "_".join(f"{k}{float(v):g}" for k, v in sorted(objective_params(rc).items()) if v is not None)
+    parts = [rc["objective"], params, "" if rc["reward"] == "binary" else rc["reward"],
+             f"ref{rc['ref_mix']:g}" if rc.get("ref_mix", 0) else "", f"seed{seed}{tag}"]
+    return "_".join(p for p in parts if p)
 
 
 def sha256(path: Path) -> str:
@@ -99,8 +134,9 @@ def main():
     cfg = apply_overrides(load_cfg(a.config), a.set)
     base = load_cfg(cfg["base_config"])
     rc = cfg["rl"]
-    objective, reward_fn = OBJECTIVES[rc["objective"]], REWARDS[rc["reward"]]
+    kind, params, reward_fn = KIND[rc["objective"]], objective_params(rc), REWARDS[rc["reward"]]
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
+    mu, p_mask, ref_mix = rc["inner_steps"], rc["prompt_mask_prob"], rc.get("ref_mix", 0.0)
     dev = get_device(a.device or base["runtime"]["device"])
     name = run_name(rc, a.seed, a.tag)
     if a.exp:
@@ -122,11 +158,25 @@ def main():
     model = build_model(base).to(dev)
     model.load_state_dict(torch.load(init, map_location=dev))
     model.eval()  # no dropout during RL (rollouts and gradient passes), as in phase 2
+    ref = None
+    if ref_mix or (kind == "grpo" and params["kl"]):   # frozen copy of the starting model
+        ref = copy.deepcopy(model)
+        for p in ref.parameters():
+            p.requires_grad_(False)
+    roll_model = MixedLogits(model, ref, ref_mix) if ref_mix else model
     opt = torch.optim.AdamW(model.parameters(), lr=rc["lr"], weight_decay=0.0)
     log_path, state_path = out / f"{name}.csv", ck / "state.pt"
+    t_min = base["diffusion_training"]["t_min"]
 
     def evaluate(ps) -> tuple[float, float]:
         return solve_rate(model, ps, S, "confidence"), solve_rate(model, ps, 1, "confidence")
+
+    def update(loss) -> float:
+        opt.zero_grad(set_to_none=True)
+        loss.backward()
+        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), rc["grad_clip"]).item()
+        opt.step()
+        return norm
 
     start, best = 1, (-1.0, 0)
     if state_path.exists():  # resume
@@ -152,32 +202,59 @@ def main():
         idx = torch.randint(0, len(train), (B,), device=dev)
         P = train.puzzles[idx].repeat_interleave(G, 0)
         with torch.no_grad():
-            O = sample(model, P, S, rc["rollout_strategy"], rc["rollout_temperature"]).grid
+            O = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"]).grid
         valid = batch_validity(O, P).view(B, G)
         r = reward_fn(O, P).view(B, G)
-        gw = objective(r, **rc["objective_params"])
-        keep = gw.keep
-        row = {"step": step, "mean_reward": r.mean().item(), "mean_valid": valid.float().mean().item(),
-               "frac_skipped": 1 - keep.float().mean().item()}
-        if keep.any():
-            Pk, Ok = P.view(B, G, 16)[keep].reshape(-1, 16), O.view(B, G, 16)[keep].reshape(-1, 16)
-            coef, vk = gw.coef[keep], valid[keep]
-            losses, norms = [], []
-            for _ in range(rc["inner_steps"]):
-                logp, given = one_step_logprobs(model, Pk, Ok, rc["prompt_mask_prob"])
-                lp = loglik(logp, Ok, given).view(-1, G)
-                loss = weighted_loglik_loss(lp, coef)
-                opt.zero_grad(set_to_none=True)
-                loss.backward()
-                norms.append(torch.nn.utils.clip_grad_norm_(model.parameters(), rc["grad_clip"]).item())
-                opt.step()
-                losses.append(loss.item())
-            lpd = lp.detach()
-            row.update(loss=sum(losses) / len(losses), grad_norm=sum(norms) / len(norms),
-                       logp_valid=lpd[vk].mean().item() if vk.any() else float("nan"),
-                       logp_invalid=lpd[~vk].mean().item() if (~vk).any() else float("nan"),
-                       pred_entropy=predictive_entropy(logp.detach(), given).item(),
-                       **weight_diagnostics(gw.w_pos[keep], vk))
+        row = {"step": step, "mean_reward": r.mean().item(), "mean_valid": valid.float().mean().item()}
+        losses, norms = [], []
+        if kind == "diffusion":   # SFT loss on own valid rollouts, or on the true solutions (uses labels)
+            if rc["objective"] == "supervised":
+                Pt, Ot = P, train.solutions[idx].repeat_interleave(G, 0)
+                row["frac_skipped"] = 0.0
+            else:
+                sel = valid.view(-1)
+                Pt, Ot = P[sel], O[sel]
+                row["frac_skipped"] = 1 - valid.any(1).float().mean().item()
+            if len(Pt):
+                for _ in range(mu):
+                    loss = diffusion_loss(model, PuzzleSet(Pt, Ot, torch.zeros(len(Pt))), t_min)
+                    norms.append(update(loss)); losses.append(loss.item())
+        else:
+            A, keep = advantages(r)
+            row["frac_skipped"] = 1 - keep.float().mean().item()
+            if keep.any():
+                Pk, Ok = P.view(B, G, 16)[keep].reshape(-1, 16), O.view(B, G, 16)[keep].reshape(-1, 16)
+                vk = valid[keep]
+                if kind == "weighted":
+                    gw = WEIGHTED[rc["objective"]](r, **params)
+                    gw.pos, gw.neg = gw.pos[keep], gw.neg[keep]
+                    for _ in range(mu):
+                        logp, given = one_step_logprobs(model, Pk, Ok, p_mask)
+                        lp = loglik(logp, Ok, given).view(-1, G)
+                        loss = weighted_loss(lp, gw)
+                        norms.append(update(loss)); losses.append(loss.item())
+                    row.update(weight_diagnostics(gw.w_pos, vk))
+                else:   # grpo: old (and reference) per-cell log-probs under the masks of each inner step
+                    Ak = A[keep].reshape(-1)
+                    masks = [prompt_mask(Pk, p_mask) for _ in range(mu)]
+                    with torch.no_grad():
+                        old = [cell_logp(one_step_logprobs(model, Pk, Ok, extra=m)[0], Ok) for m in masks]
+                        refs = [cell_logp(one_step_logprobs(ref, Pk, Ok, extra=m)[0], Ok) if params["kl"]
+                                else None for m in masks]
+                    clips = []
+                    for m, o, rf in zip(masks, old, refs):
+                        logp, given = one_step_logprobs(model, Pk, Ok, extra=m)
+                        loss, clip = grpo_loss(cell_logp(logp, Ok), o, Ak, ~given, params["epsilon"],
+                                               params["kl"], rf)
+                        norms.append(update(loss)); losses.append(loss.item()); clips.append(clip)
+                    lp = loglik(logp, Ok, given).view(-1, G)
+                    row["clip_frac"] = sum(clips) / len(clips)
+                lpd = lp.detach()
+                row.update(logp_valid=lpd[vk].mean().item() if vk.any() else float("nan"),
+                           logp_invalid=lpd[~vk].mean().item() if (~vk).any() else float("nan"),
+                           pred_entropy=predictive_entropy(logp.detach(), given).item())
+        if losses:
+            row.update(loss=sum(losses) / len(losses), grad_norm=sum(norms) / len(norms))
         if step % rc["eval_every"] == 0 or step == steps:
             row["val_solve"], row["val_solve_s1"] = evaluate(val)
             if row["val_solve"] > best[0]:
@@ -194,8 +271,9 @@ def main():
     torch.save(model.state_dict(), ck / "final.pt")
     final_val, final_val_s1 = evaluate(val)
     final_test, final_test_s1 = evaluate(test)
-    summ = {"name": name, "objective": rc["objective"], "objective_params": rc["objective_params"],
-            "reward": rc["reward"], "seed": a.seed, "tag": a.tag, "lr": rc["lr"], "steps": steps, "init": str(init),
+    summ = {"name": name, "objective": rc["objective"], "objective_params": params,
+            "reward": rc["reward"], "ref_mix": ref_mix, "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
+            "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,
             "final_val_s1": final_val_s1, "final_test_s1": final_test_s1,

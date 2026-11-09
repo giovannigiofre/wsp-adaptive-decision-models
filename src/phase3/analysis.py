@@ -84,7 +84,7 @@ def repro():
 
 
 WINDOW_COLS = ["mean_reward", "mean_valid", "frac_skipped", "loss", "grad_norm", "w_entropy", "w_ess",
-               "w_pos_on_invalid", "logp_valid", "logp_invalid", "pred_entropy"]
+               "w_pos_on_invalid", "logp_valid", "logp_invalid", "pred_entropy", "clip_frac"]
 
 
 def compact(exp: str):
@@ -101,7 +101,7 @@ def compact(exp: str):
         win = pd.cut(df.step, [-1] + ev.step.tolist(), labels=ev.step.tolist()).astype(float)
         means = df[df.step > 0].groupby(win[df.step > 0], observed=True)[cols].mean().rename_axis("step").reset_index()
         cfg = {"run": j["name"], "objective": j["objective"], **j["objective_params"], "reward": j["reward"],
-               "tag": j.get("tag", ""), "seed": j["seed"]}
+               "ref_mix": j.get("ref_mix", 0.0), "tag": j.get("tag", ""), "seed": j["seed"]}
         curves.append(ev.merge(means, on="step", how="left").assign(**cfg))
         reach = ev.step[ev.val_solve >= 0.7]
         runs.append({**cfg, "steps": j["steps"], "lr": j["lr"], "init": Path(j["init"]).name,
