@@ -74,6 +74,37 @@ def main():
             w.writerow({k: (round(v, 4) if isinstance(v, float) else v) for k, v in r.items()})
     for r in out_rows:
         print({k: (round(v, 3) if isinstance(v, float) else v) for k, v in r.items()})
+    paired(nboot)
+
+
+def paired(nboot, ref="confidence"):
+    """Paired comparison: per example, mean score over the step budgets for each strategy;
+    then the mean of (ref - other) with a 95% bootstrap CI over examples.
+    Writes results/phase1/strategies_paired.csv."""
+    rows = []
+    for task in ["sudoku", "countdown", "gsm8k"]:
+        p = REPO / f"results/phase1/raw/{task}.csv"
+        if not p.exists():
+            continue
+        per = defaultdict(lambda: defaultdict(list))
+        for r in csv.DictReader(open(p)):
+            per[r["strategy"]][r["id"]].append(float(r["score"]))
+        if ref not in per:
+            continue
+        for s in sorted(per):
+            if s == ref:
+                continue
+            ids = sorted(set(per[ref]) & set(per[s]))
+            d = np.array([np.mean(per[ref][i]) - np.mean(per[s][i]) for i in ids])
+            lo, hi = bootstrap_ci(d, nboot)
+            rows.append({"task": task, "comparison": f"{ref} - {s}", "n_examples": len(ids),
+                         "mean_diff": round(float(d.mean()), 4), "lo": round(lo, 4), "hi": round(hi, 4)})
+    with open(REPO / "results/phase1/strategies_paired.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    for r in rows:
+        print(r)
 
 
 if __name__ == "__main__":
