@@ -1,0 +1,7 @@
+variant,n,final_test_mean,final_test_std,final_val_mean,agree_with_confidence,lr
+"RL, + hidden state, confidence start",5,0.6678,0.0163,0.6584,0.7658,0.01
+"teacher (uses solutions), + hidden state",3,0.6438,0.0208,0.6175,0.6944,0.01
+"RL, + hidden state, random start",5,0.6194,0.0839,0.6223,0.7297,0.01
+"RL, 3 heuristic scores, random start",5,0.5673,0.0015,0.5816,0.9634,0.003
+"RL, 3 heuristic scores, confidence start",5,0.5672,0.0014,0.5816,0.9635,0.003
+"teacher (uses solutions), 3 scores",3,0.5623,0.0013,0.5552,0.9536,0.003

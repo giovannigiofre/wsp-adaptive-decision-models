@@ -1,0 +1,33 @@
+{
+  "name": "reinforce_probs_confidence_lr0.003_seed0",
+  "method": "reinforce",
+  "features": "probs",
+  "init": "confidence",
+  "lr": 0.003,
+  "seed": 0,
+  "steps": 2000,
+  "denoiser": "/Users/giovannigiofre/dllm-cache/phase2/sft/sft_weak.pt",
+  "denoiser_sha256": "f47107867c03ea10be837dfbd137e6f95fdb7fa7c907b1b1a0f75f4f897bb497",
+  "code_commit": "002f5fb",
+  "best_val": 0.5901639461517334,
+  "best_step": 1100,
+  "final_val": 0.5803278684616089,
+  "final_test": 0.5670017004013062,
+  "final_val_agree_conf": 0.9671052631578946,
+  "final_test_agree_conf": 0.9645410082768999,
+  "lin_weight_first3": [
+    10.49,
+    0.515,
+    0.477
+  ],
+  "wall_clock_s": 769.1893289089203,
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "mps",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 4
+  },
+  "best_test": 0.5661641359329224
+}
