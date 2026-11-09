@@ -1,5 +1,5 @@
 torch>=2.4
-transformers  # pin to the version required by the LLaDA README
+transformers==4.38.2  # required by LLaDA README (model code uses trust_remote_code)
 accelerate
 datasets
 huggingface_hub
@@ -10,8 +10,11 @@ psutil
 matplotlib
 imageio
 scikit-learn
+scipy  # Spearman rho in the phase-1 notebook
 tqdm
 pytest
-nbformat  # phase 2 notebook build/execute (already in venv: 5.11.1)
-nbconvert  # 7.17.2
-ipykernel  # 7.4.0
+Pillow
+nbformat
+nbconvert
+ipykernel
+jupyter  # for notebooks/

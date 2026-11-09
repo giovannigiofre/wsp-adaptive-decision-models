@@ -1,0 +1,10 @@
+task,comparison,n_examples,mean_diff,lo,hi
+sudoku,confidence - entropy,12,0.0347,-0.0347,0.1319
+sudoku,confidence - margin,12,0.0174,-0.0312,0.0833
+sudoku,confidence - random,12,-0.0139,-0.0729,0.0694
+countdown,confidence - entropy,12,0.1111,-0.0556,0.25
+countdown,confidence - margin,12,0.0278,-0.2222,0.2229
+countdown,confidence - random,12,0.2778,0.1111,0.4444
+gsm8k,confidence - entropy,5,0.1333,0.0,0.2667
+gsm8k,confidence - margin,5,0.0,0.0,0.0
+gsm8k,confidence - random,5,0.1333,0.0,0.4

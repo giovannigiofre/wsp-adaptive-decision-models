@@ -1,0 +1,401 @@
+task,id,strategy,steps,gen_length,block_length,score,correct,extracted,nfe,wall_s,n_content_tokens,mean_conf,min_conf,ans_mean_conf,ans_min_conf,generation
+gsm8k,gsm8k-30,random,32,128,32,1.0,1,109.0,32,39.1,126,0.8011577725410461,0.07837570458650589,0.9983783960342407,0.9954379200935364,"
+The total ratio of Darrell and Allen's ages is 18, and their sum is 162, so each part is 162/18 = 9. Darrell's age age now is 7 * 91 - 7 = 63. Allen's age now is 11 * 91 - 11 = 99. Allen's age 10 years from now will be 99 + 10 = 109.
+</reasoning> <answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,random,64,128,32,1.0,1,109.0,64,57.54,126,0.8756124973297119,0.06998351216316223,0.9010845422744751,0.46334829926490784,"
+The total ratio of Darrell and Allen's current ages is 7 + 11 = 18. Their total current age is 162, so each part is equal to 162 / 18 = 9. Therefore, Allen's current age is 11 * 9 = 99. To find his age in 10 years, we add 10 years to his current age: 99 + 10 = 109.
+</reasoning>
+
+<answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,random,128,128,32,1.0,1,109.0,128,111.44,126,0.8783462047576904,0.07837570458650589,0.9998834729194641,0.9996101260185242,"
+The total ratio of Darrell and Allen is 7 + 11 = 18 parts. Since their total age now is 162, each part represents 162 / 18 = 9 years. Allen's current age is 11 parts, so 11 * 9 = 99 years. To find Allen's age 10 years from now, we add he will be 99 + 10 = 109 years old.
+</reasoning>
+
+<answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,confidence,32,128,32,1.0,1,109.0,32,27.8,126,0.751451313495636,0.17161796987056732,0.9733123779296875,0.897491991519928,"
+Let's denote Darrell and Allen's ages as 7x and 11x respectively. where their ratio is is 7:11. Their total age now is  7x + 11x = 18x. Therefore, 18x = 162, which x = = 9. Allen's current age age is 11x = 99. Allen's age 10 years from now will be 99 + 10 = 109
+</reasoning>
+<answer>
+\boxed{109}<|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,confidence,64,128,32,1.0,1,109.0,64,54.86,126,0.8813431859016418,0.30307698249816895,0.9999364018440247,0.9998437166213989,"
+Let Darrell's age be 7x and Allen's age be 11x. The total of their ages is 7x + 11x = 18x. Therefore that 18x = 162, which x = 9. So, Allen's age is 11x = 11 * 9 = 99 years. In 10 years, his age will be 99 + 10 = 109 years.
+</reasoning>
+<answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,confidence,128,128,32,1.0,1,109.0,128,110.45,126,0.9344242811203003,0.3448525369167328,0.9926663637161255,0.9579305052757263,"
+Let Darrell's age be 7x and Allen's age be 11x. The sum of their ages is given as 162, so 7x + 11x = 162. Solving for x, we get x = 9. Therefore, Allen's current age is 11x = 11 * 9 = 99. To find Allen's age 10 years from now, we add 10 to his current age. 
+</reasoning>
+<answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,margin,32,128,32,1.0,1,109.0,32,28.49,126,0.8043209910392761,0.17161796987056732,0.9968252778053284,0.9810419082641602,"
+Let's denote the person's current ages as $7x$ and $11x$ respectively. We know their total ages sum to 162, so $7x + 11x = 162$. Solving for $x$, we get $x = 9$. Therefore, Allen's current age is $11 \times 9 = 99$ years. Ten years, Allen's age will be $99 + 10 = 109$.
+
+</reasoning>
+<answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,margin,64,128,32,1.0,1,109.0,64,57.38,126,0.8791912794113159,0.25629281997680664,0.9982908964157104,0.991446852684021,"
+Let Darrell's age be \(7x\) and Allen's age be \(11x\). The total of their ages is \(7x + 11x = 162\). Therefore, \(18x = 162\), so \(x = 9\). Allen's current age is \(11x = 11 * 9 = 99\). In 1010 years, Allen's age will be \(99 + 10 = 109\).
+</reasoning>
+\boxed{109}<|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,margin,128,128,32,1.0,1,109.0,128,115.49,126,0.9565134644508362,0.3300219774246216,0.9999508261680603,0.9998897314071655,"
+Let Darrell's age be \(7x\) and Allen's age be \(11x\). The sum of their ages is given by \(7x + 11x = 162\). Solving for \(x\), we get \(x = 9\). Therefore, Allen's current age is \(11 \times 9 = 99\). In 10 years, Allen's age will be \(99 + 10 = 109\).
+</reasoning>
+<answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,entropy,32,128,32,0.0,0,43.0,32,27.75,126,0.6869760155677795,0.11891867220401764,0.9963794350624084,0.9926277995109558,"
+Let's age of Darrell and Allen be 7x and 11x respectively. Their total age now is 7xx11x = 18x.21x = 42x.111x = 122.1, x = 3. Allen, s current age is 11x = 11(3) =33. Allen's age 10 years from now is 33+10 = 43.
+</reasoning>
+<answer>
+\boxed{43}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,entropy,64,128,32,1.0,1,109.0,64,55.55,126,0.8838621377944946,0.2697506546974182,0.999961793422699,0.9999271631240845,"
+Let Darrell's age be 7x and Allen's age be 11x. The total age their ages is 7x + 11x = 18x. We have 18x = 162, so x = 9. Therefore, Allen's age is 11x = 11 * 9 = 99 years. In 10 years, his age will be 99 + 10 = 109 years.
+</reasoning>
+<answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-30,entropy,128,128,32,1.0,1,109.0,128,110.38,126,0.9221177101135254,0.2697506546974182,0.999944806098938,0.9998749494552612,"
+Let Darrell's age be 7x and Allen's age be 11x. The total age now is 7x + 11x = 18x. Therefore, 18x = 162, which gives x = 9. So, Allen's age now is 11x = 11 * 9 = 99. Allen's age 10 years from now will be 99 + 10 = 109.
+</reasoning>
+<answer>
+\boxed{109}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,random,32,128,32,0.0,0,300.0,32,42.17,126,0.6571508646011353,0.09767577052116394,0.896061360836029,0.6388935446739197,"
+Lorraine starts with 30 small stickers and 40 large stickers, has 27 small buttons + 40 large = 27 small buttons + 33 = 60 small buttons, which is 20 large buttons, and 20 * 3 = 60 small buttons, which is 20 large buttons, and 20 + 60 =  100 * 3 = 300 small buttons, in total buttons.
+</reasoning>
+<answer>
+\boxed{300}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,random,64,128,32,0.0,0,77.0,64,83.16,127,0.8663818836212158,0.1001369059085846,0.8863514065742493,0.56840580701828,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which is 27 large buttons. She then trades 50% of her large stickers for large buttons, which is 20 large buttons. The remaining large stickers are traded for small buttons, which is 10 small buttons. Adding all the buttons she has, she has 27 large buttons + 10 small buttons = 37 buttons.
+</reasoning>
+<answer>
+\boxed{77}
+</answer><|eot_id|>"
+gsm8k,gsm8k-754,random,128,128,32,0.0,0,77.0,128,165.7,126,0.9249999523162842,0.1399804651737213,0.9998684525489807,0.9997237324714661,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which gives her 27 large buttons. She trades 50% of her large stickers for large buttons, which gives her 20 large buttons. She trades the remaining large stickers for small buttons, which gives her 30 small buttons. By the end, she has 27 + 20 + 30 = 77 buttons.
+</reasoning>
+<answer>
+\boxed{77}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,confidence,32,128,32,0.0,0,36.0,32,41.14,126,0.7738485336303711,0.2157444804906845,0.9702578186988831,0.8799252510070801,"
+Lorraine starts with 30 small stickers and 40 large%. She trades 90% of her small stickers for large buttons, which is  27 small buttons and 9 large buttons. She trades 50% of her large stickers for large buttons, which is 20 large buttons and 10 of them for small buttons. which means she has 27 small buttons and 9 large buttons for a total of 27+9 = 36 buttons.
+</reasoning>
+<answer>
+\boxed{36}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,confidence,64,128,32,0.0,0,107.0,64,82.88,126,0.9034293293952942,0.31423187255859375,0.990942656993866,0.9494646787643433,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which is 27 small buttons. She then trades 50% of her large stickers for large buttons, which is 20 large buttons. The rest large stickers are traded for small buttons, which is 60 small buttons. In total, she has 27 + 20 + 60 = 107 buttons.
+</reasoning>
+
+<answer>
+\boxed{107}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,confidence,128,128,32,0.0,0,87.0,128,166.4,126,0.9203183054924011,0.4656640291213989,0.975100040435791,0.9036116003990173,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which is 27 large buttons. She trades 50% of her large stickers for large buttons, which is 20 large buttons. The rest of her large stickers are traded for small buttons, which is 60 small buttons. In total, she has 27 large buttons + 60 small buttons = 87 buttons. 
+</reasoning>
+
+<answer>
+\boxed{87}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,margin,32,128,32,0.0,0,83.0,32,42.85,126,0.8597313761711121,0.19600731134414673,0.9238809943199158,0.6268402934074402,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which is 2.7 small buttons. She trades 50% of her large stickers for large buttons, which is 20 large buttons. The rest of her large stickers for small buttons, which is 60 small buttons. In total, she has 2.7 small buttons, 20 large buttons, and 60 small buttons.
+</reasoning>
+<answer>
+\boxed{83}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,margin,64,128,32,0.0,0,107.0,64,85.32,126,0.9162476062774658,0.3065590262413025,0.9995477795600891,0.997626006603241,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which is 27 large buttons. She trades 50% of her large stickers for large buttons, which is 20 large buttons. The rest of her large stickers are traded for small buttons, which is 60 small buttons. In total, she has 27 + 20 + 60 = 107 buttons.
+</reasoning>
+<answer>
+\boxed{107}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,margin,128,128,32,0.0,0,107.0,128,170.9,126,0.930526077747345,0.41345611214637756,0.9998072385787964,0.9994051456451416,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which is 27 large buttons. She trades 50% of her large stickers for large buttons, which is 20 large buttons. The rest of her large stickers are traded for small buttons, which is 60 small buttons. In total, she has 27 + 20 + 60 = 107 buttons.
+</reasoning>
+<answer>
+\boxed{107}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,entropy,32,128,32,0.0,0,77.0,32,41.46,126,0.7821390628814697,0.21358095109462738,0.9790042042732239,0.944392204284668,"
+Lorraine starts with 30 small stickers and 40 large% stickers. She trades 90% of her small stickers for large buttons, which is worth 27 buttons. She then trades 50% of her large stickers for large buttons, which is worth 20 buttons. The rest of the large stickers are traded for small buttons, which is worth 30 buttons. Therefore, she total number of 27 +  20 + 30 = 77
+</reasoning>
+<answer>
+\boxed{77}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,entropy,64,128,32,0.0,0,107.0,64,83.65,126,0.9009527564048767,0.2794422209262848,0.990942656993866,0.9494646787643433,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which is 27 small buttons. She then trades 50% of her large stickers for large buttons, which is 20 large buttons. The rest large stickers are traded for small buttons, which is 60 small buttons. In total, she has 27 + 20 + 60 = 107 buttons.
+</reasoning>
+
+<answer>
+\boxed{107}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-754,entropy,128,128,32,0.0,0,87.0,128,167.4,126,0.8854208588600159,0.2947314977645874,0.9791988730430603,0.9338556528091431,"
+Lorraine starts with 30 small stickers and 40 large stickers. She trades 90% of her small stickers for large buttons, which is 27 small buttons. She trades 50% of her large stickers for large buttons, which is 20 large buttons. The rest of her large stickers, which is 20 large stickers, are traded for small buttons, resulting in 60 small buttons. Therefore, she has 27 small buttons and 0 large buttons.
+</reasoning>
+<answer>
+\boxed{87}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,random,32,128,32,1.0,1,13.0,32,28.03,126,0.8491984009742737,0.1084519699215889,0.9976500868797302,0.9882166981697083,"
+First, we determine the number of letters in Indras' name. Indras has 6 letters. Half the letters in Indras' name is \( \frac{6}{2} = 3 \) letters. Since her sister has 4 more letters, her name has \( 3 + 4 = 7 \) letters. 
+
+Now, adding the number of letters in Indras and her sister's names gives us:
+\[ 
+  6 + 7 = 13 
+\]
+</answer>
+<answer>
+\boxed{13}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,random,64,128,32,1.0,1,13.0,64,54.61,126,0.9364578723907471,0.17332831025123596,0.9999580383300781,0.9998738765716553,"
+1. Indras has 6 letters in her name, which is 6.
+2. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \).
+3. Her sister's name has 4 more letters than half of the letters in Indras' name, which is \( 3 + 4 = 7 \).
+4. Therefore, the total number of letters in both names is \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,random,128,128,32,1.0,1,13.0,128,109.96,127,0.9461248517036438,0.17332831025123596,0.9889707565307617,0.9340872764587402,"
+Indras has 6 letters in her name. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \) letters. Adding 4 letters to this gives \( 3 + 4 = 7 \) letters. Therefore, her sister's name has 7 letters. The total number of letters in both their names is \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}
+</answer><|eot_id|>"
+gsm8k,gsm8k-429,confidence,32,128,32,1.0,1,13.0,32,27.35,126,0.9022263884544373,0.347339928150177,0.9999620318412781,0.9998960494995117,"
+Indras' name has 6 letters. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Therefore, her sister's name has \( 3 + 4 = 7 \) letters. To find number total number of letters in both names, we add the letters of Indras and her sister: \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,confidence,64,128,32,1.0,1,13.0,64,54.52,126,0.9234670996665955,0.40175119042396545,0.9562951922416687,0.8171218633651733,"
+Indras' name has 6 letters. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Therefore, her sister's name has \( 3 + 4 = 7 \) letters. To total number of letters in both Indras and her sister's names is the sum of the letters in their names: 6 + 7 = 13.
+</reasoning>
+<answer>
+\boxed{13}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,confidence,128,128,32,1.0,1,13.0,128,109.24,126,0.9629254937171936,0.4140743017196655,0.9965367913246155,0.9796978235244751,"
+Indras' name has 6 letters. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Therefore, her sister's name has \( 3 + 4 = 7 \) letters. To find the total number of letters in both names, we add the letters in Indras' name and her sister's name: \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}<|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,margin,32,128,32,1.0,1,13.0,32,28.58,126,0.89317786693573,0.2981945872306824,0.9999182820320129,0.999657154083252,"
+Indras' name has 6 letters. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Therefore, her sister's name has \( 3 + 4 = 7 \) letters. To find number total number of letters in both names, we add the letters in both girls' names together: \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,margin,64,128,32,1.0,1,13.0,64,56.86,126,0.9492581486701965,0.3933633267879486,0.9998905658721924,0.9998051524162292,"
+Indras' name has 6 letters. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Therefore, her sister's name has \( 3 + 4 = 7 \) letters. To find the total number of letters in both names, we add the letters in Indras' name and her sister's name: \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}<|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,margin,128,128,32,1.0,1,13.0,128,114.05,126,0.9636536836624146,0.3933633267879486,0.9998742938041687,0.9995384216308594,"
+Indras' name has 6 letters. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Therefore, her sister's name has \( 3 + 4 = 7 \) letters. To find the total number of letters in both names, we add the letters in Indras' name and her sister's name: \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}<|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,entropy,32,128,32,1.0,1,13.0,32,27.56,126,0.8388268351554871,0.22140160202980042,0.9994494915008545,0.9977152347564697,"
+Indras' name has 6 letters. Half sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Therefore, her sister's name has \( 3 + 4 = 7 \) letters. To find number total number of letters in both names, we add the letters in Indras' name and her sister's name: \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}<|eot_id|><|endoftext|>"
+gsm8k,gsm8k-429,entropy,64,128,32,1.0,1,13.0,64,54.79,122,0.9408083558082581,0.2989712357521057,0.9992774128913879,0.9974740147590637,"
+Indras has 6 letters in her name. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Adding, her sister's name has \( 3 + 4 = 7 \) letters. Therefore, the total number of letters in Indras' and her sister's names is \( 6 + 7 = 13 \).
+</reasoning>
+<answer>
+\boxed{13}
+</answer><|eot_id|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|>"
+gsm8k,gsm8k-429,entropy,128,128,32,1.0,1,13.0,128,109.38,126,0.9495294690132141,0.3144467771053314,0.9976709485054016,0.9926576018333435,"
+Indras' name has 6 letters. Her sister's name has 4 more letters than half of the letters in Indras' name. Half of the letters in Indras' name is \( \frac{6}{2} = 3 \). Adding 4 to this number gives \( 3 + 4 = 7 \). Therefore, her sister's name has 7 letters. The total number of letters in both names is the sum of the letters in Indras' and her sister's names.
+</reasoning>
+<answer>
+\boxed{13}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1010,random,32,128,32,1.0,1,5.0,32,40.78,127,0.9552472829818726,0.16438643634319305,0.9866731762886047,0.9613572359085083,"
+Bethany can run 10 laps. Trey can run 4 more laps than Bethany, so Trey can run 10 laps + 4 laps = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 laps / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 laps - 2 laps = 5 laps. Bethany can run 10 laps - 5 laps = 5 laps more than Quinn.
+</reasoning>
+\boxed{5}
+</answer><|eot_id|>"
+gsm8k,gsm8k-1010,random,64,128,32,1.0,1,5.0,64,79.95,121,0.9227023720741272,0.16438643634319305,0.9999098777770996,0.9997614026069641,"
+Bethany can run 10 laps in one hour. 
+Trey can run 10 laps + 4 more laps = 14 laps in one hour.
+Shaelyn can run 14 laps / half as many laps = 7 laps in one hour.
+Quinn can run 7 laps - 2 fewer laps = 5 laps in one hour.
+Therefore, Bethany can run 10 laps - 5 laps = 5 more laps than Quinn.
+</reasoning>
+<answer>
+\boxed{5}
+</answer><|eot_id|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|><|endoftext|>"
+gsm8k,gsm8k-1010,random,128,128,32,1.0,1,5.0,128,158.98,126,0.9715498685836792,0.23061175644397736,0.999339759349823,0.9969232678413391,"
+- Bethany can run 10 laps.
+- Trey can run 4 more laps than Bethany, so Trey runs 10 + 4 = 14 laps.
+- Shaelyn can run half as many laps as Trey, so Shaelyn runs 14 / 2 = 7 laps.
+- Quinn can run 2 fewer laps than Shaelyn, so Quinn runs 7 - 2 = 5 laps.
+- Bethany can run 10 - 5 more laps than Quinn.
+</reasoning>
+<answer>
+\boxed{5}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1010,confidence,32,128,32,1.0,1,5.0,32,39.86,126,0.9701884984970093,0.7125324010848999,0.9238308072090149,0.7634480595588684,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+<answer>
+boxed{5}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1010,confidence,64,128,32,1.0,1,5.0,64,79.72,126,0.9691002368927002,0.5185047388076782,0.6423130035400391,0.5185047388076782,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+<answer>
+\boxed{}5
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1010,confidence,128,128,32,1.0,1,5.0,128,159.73,126,0.9773978590965271,0.5974283814430237,0.8023050427436829,0.6170091032981873,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+<answer>
+\boxed{}5
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1010,margin,32,128,32,1.0,1,5.0,32,41.07,126,0.9699406623840332,0.6887336373329163,0.9238308072090149,0.7634480595588684,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+<answer>
+boxed{5}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1010,margin,64,128,32,1.0,1,5.0,64,82.03,127,0.9867129921913147,0.6821295022964478,0.9990852475166321,0.9980296492576599,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+<answer>
+\boxed{5}
+</answer><|eot_id|>"
+gsm8k,gsm8k-1010,margin,128,128,32,1.0,1,5.0,128,164.98,127,0.9882029891014099,0.5974283814430237,0.9994854927062988,0.9986671209335327,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+<answer>
+\boxed{5}
+</answer><|eot_id|>"
+gsm8k,gsm8k-1010,entropy,32,128,32,1.0,1,5.0,32,40.3,126,0.9695442914962769,0.6596866250038147,0.9188441038131714,0.7288505434989929,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+<answer>
+boxed{5}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1010,entropy,64,128,32,1.0,1,5.0,64,80.16,126,0.9818357825279236,0.4925563633441925,0.9911220669746399,0.9561789631843567,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Therefore, Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+
+<answer>
+\boxed{5}<|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1010,entropy,128,128,32,1.0,1,5.0,128,160.41,126,0.9860410690307617,0.5898788571357727,0.9911118745803833,0.9559526443481445,"
+Bethany can run 10 laps in one hour. Trey can run 4 more laps than Bethany, so Trey can run 10 + 4 = 14 laps. Shaelyn can run half as many laps as Trey, so Shaelyn can run 14 / 2 = 7 laps. Quinn can run 2 fewer laps than Shaelyn, so Quinn can run 7 - 2 = 5 laps. Therefore, Bethany can run 10 - 5 = 5 more laps than Quinn.
+</reasoning>
+
+<answer>
+\boxed{5}<|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,random,32,128,32,0.0,0,5.0,32,40.68,126,0.8383797407150269,0.1081436425447464,0.9988318681716919,0.9954208731651306,"
+On the first street, there are 5 children following the truck.
+On the second street,, each of the 5 children is joined by another child, so the total becomes 5 + 1 = 6
+On the third street, each of the 6 children is joined by 2 more children, so the total becomes 6 + 2 * 2 = 10
+After the original 5 children leave, the number of remaining children is 10 - 5 = 5.
+</reasoning>
+<answer>
+\boxed{5}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,random,64,128,32,0.0,0,15.0,64,82.42,126,0.7789058089256287,0.10037311911582947,0.9451746940612793,0.6725831031799316,"
+- Initially, we know there are 5 children following the truck.
+- On the second street, each child is joined by another, meaning each child now has a partner, maintaining the same total of 5 children.
+- On the third street, each child in the existing group is joined by another 2 children, resulting in a total of \(5 + 2 \times 5\) children = 15 children.
+- The original 5 children then, giving up, leave the group.
+
+</ing>
+
+<answer>
+\boxed{15}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,random,128,128,32,0.0,0,30.0,128,164.12,126,0.8976518511772156,0.1081436425447464,0.9228391647338867,0.5988112092018127,"
+- Initially, there are 5 children chasing the ice cream truck.
+- On the second street, each of the 5 children is joined by another child, making a total of \( 5 \times 2 = 10 \) children.
+- On the third street, each of the 10 children is joined by 2 more children, making a total of \( 10 \times 3 = 30 \) children.
+- The original 5 children leave after the third street.
+</reasoning>
+<answer>
+\boxed{30}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,confidence,32,128,32,1.0,1,25.0,32,40.84,126,0.8995293378829956,0.3177085816860199,0.8870734572410583,0.6766769886016846,"
+1. Initially, there are 5 children following the truck.
+2. On the second street, each child is joined by another child, so the total number children becomes \( 5 \times 2 = 10 \).
+3. On the third street, each child in the existing group is joined by another 2 children, so the total number children becomes \( 10 \times 3 = 30 \).
+4. The original 5 children give up and leave the group.
+</reasoning>
+<answer>
+\boxed{25}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,confidence,64,128,32,1.0,1,25.0,64,82.15,126,0.932231068611145,0.3677731454372406,0.828880786895752,0.5605065822601318,"
+1. Initially, there are 5 children following the truck.
+2. On the second street, each child is joined by another child, so the total number of children becomes \(5 \times 2 = 10\).
+3. On the third street, each child in the existing group is joined by another 2 children, so the total number of children becomes \(10 \times 3 = 30\).
+4. The original 5 children give up and leave the group.
+</reasoning>
+<answer>
+\boxed{25}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,confidence,128,128,32,0.0,0,5.0,128,164.18,126,0.9338617324829102,0.34893184900283813,0.9373806715011597,0.7697048783302307,"
+Initially, there are 5 children following the truck. On the second street, each of these 5 children is joined by another child, resulting in \(5 \times 2 = 10\) children. On the third street, each of these 10 children is joined by another 2 children, resulting in \(10 \times 3 = 30\) children. The original 5 children then leave, so the number of children remaining is \(30 - 5 = 25\).
+</reasoning>
+<answer>
+\boxed{5}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,margin,32,128,32,0.0,0,5.0,32,42.22,126,0.7613022923469543,0.24765564501285553,0.9399871826171875,0.846994161605835,"
+Initially, there are 5 children running on the first street. On the second street, each of is 5 children is joined by another child, making it a total of 5 + 2 = 10 children. On the third street, each of these 10 children is joined by 2 more children, making it a total of 10 + 2 =  10 children.0 children. However, the original 5 children leave, so there are now only 5 the truck.
+</reasoning>
+<answer>
+\boxed{5}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,margin,64,128,32,1.0,1,25.0,64,84.73,126,0.9017400741577148,0.2670995593070984,0.9855139851570129,0.930011510848999,"
+Initially, there are 5 children following the truck. On the second street, each of these 5 children is joined by another child, making the total number of children \(5 \times 2 = 10\). On the third street, each of these 10 children is joined by another 2 children, making the total number of children \(10 \times 3 = 30\). Finally, the original 5 children leave, leaving \(25\) new children following the truck.
+</reasoning>
+<answer>
+\boxed{25}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,margin,128,128,32,1.0,1,25.0,128,169.76,126,0.9452784657478333,0.427170068025589,0.9820583462715149,0.8932522535324097,"
+Initially, there are 5 children following the truck. On the second street, each of these 5 children is joined by another child, resulting in \(5 \times 2 = 10\) children. On the third street, each of these 10 children is joined by another 2 children, resulting in \(10 \times 3 = 30\) children. The original 5 children then leave, so there are \(30 - 5 = 25\) children remaining.
+</reasoning>
+
+<answer>
+\boxed{25}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,entropy,32,128,32,0.0,0,3.0,32,41.41,126,0.7965649962425232,0.1517183929681778,0.8912698030471802,0.5074456334114075,"
+1. Initially, there are 5 children following the truck.
+2. On the second street, each of the 5 children is joined by another child, making in total 5 children joined by 1 child.
+3. On the third street, each of the 1 children is joined by 2 more children, making in total 1 children joined by 2 children.
+4. The original 5 children give up and leave the group, so now are now with 3 children following the truck.
+</reasoning>
+<answer>
+\boxed{3}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,entropy,64,128,32,0.0,0,8.0,64,82.83,126,0.8605988621711731,0.21860811114311218,0.9535480737686157,0.848105251789093,"
+1. Initially, there are 5 children following the truck.
+2. On the second street, each child is joined by another child, so the total number of children becomes \(5 +
+3. On the third street, each child in the existing group is joined by another 2 children, so the total number of children becomes \(5 + 4 + 2 + 2 = 13\).
+4. The original 5 children then leave, so the number of children remaining is \(8.
+</reasoning>
+<answer>
+\boxed{8}
+</answer><|eot_id|><|endoftext|>"
+gsm8k,gsm8k-1284,entropy,128,128,32,1.0,1,25.0,128,165.35,126,0.9425119161605835,0.4212771952152252,0.9384295344352722,0.6493675112724304,"
+1. Initially, there are 5 children following the truck.
+2. On the second street, each child is joined by another child, so there are now \(5 \times 2 = 10\) children.
+3. On the third street, each child in the existing group is joined by another 2 children, so there are now \(10 \times 3 = 30\) children.
+4. The original 5 children leave, so we subtract 5 from the total.
+</reasoning>
+<answer>
+\boxed{25}
+</answer><|eot_id|><|endoftext|>"

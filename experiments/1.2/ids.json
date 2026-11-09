@@ -1,0 +1,37 @@
+{
+ "sudoku": [
+  "sudoku-473",
+  "sudoku-132",
+  "sudoku-472",
+  "sudoku-46",
+  "sudoku-40",
+  "sudoku-232",
+  "sudoku-45",
+  "sudoku-428",
+  "sudoku-326",
+  "sudoku-159",
+  "sudoku-291",
+  "sudoku-235"
+ ],
+ "countdown": [
+  "countdown-168",
+  "countdown-26",
+  "countdown-239",
+  "countdown-179",
+  "countdown-245",
+  "countdown-227",
+  "countdown-128",
+  "countdown-3",
+  "countdown-210",
+  "countdown-38",
+  "countdown-88",
+  "countdown-51"
+ ],
+ "gsm8k": [
+  "gsm8k-30",
+  "gsm8k-754",
+  "gsm8k-429",
+  "gsm8k-1010",
+  "gsm8k-1284"
+ ]
+}
