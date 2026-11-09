@@ -24,3 +24,11 @@ rl:
   grad_clip: 1.0
   max_rl_steps: 500
   eval_every: 25
+order_policy:           # track D (3.4b): unmasking policy on the frozen denoiser, one cell per step
+  width: 64
+  conf_scale: 10.0      # 'confidence' init: score = conf_scale * confidence
+  lr: 3.0e-3
+  steps: 1000
+  batch_puzzles: 32
+  group_size: 8
+  eval_every: 50
