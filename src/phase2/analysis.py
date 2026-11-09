@@ -49,7 +49,7 @@ def strategies(cfg, ds, dev, ckpts: dict[str, str]):
                                  "solve_rate": solved.mean(), "ci_lo": lo, "ci_hi": hi, "n": len(solved),
                                  "n_forward": int(min(S, int(test.k.max()))), "wall_s": time.time() - t0})
                     for k in sorted(set(test.k.tolist())):
-                        sel = (test.k == k).numpy()
+                        sel = (test.k == k).cpu().numpy()
                         rows[-1][f"solve_k{k}"] = solved[sel].mean()
         print(name, "done", flush=True)
     df = pd.DataFrame(rows)

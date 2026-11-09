@@ -34,7 +34,8 @@ def sft():
     fig, ax = plt.subplots(1, 2, figsize=(9, 3.4))
     ax[0].plot(df.step, df.train_loss, color=C[0], label="train (running mean)")
     ax[0].plot(df.step, df.val_loss, color=C[1], label="val")
-    ax[0].set(xlabel="training step", ylabel="masked-diffusion loss (1/t weighted)", title="Loss")
+    ax[0].set(xlabel="training step (log scale)", ylabel="masked-diffusion loss (1/t weighted)", title="Loss",
+              xscale="log")
     ax[0].legend()
     ax[1].plot(df.step, df.val_solve, color=C[1], label="val (unseen solution grids)")
     ax[1].plot(df.step, df.train_solve, color=C[0], label="train probe (305 puzzles)")
@@ -42,8 +43,9 @@ def sft():
     ax[1].axhspan(lo, hi, color="0.85", alpha=0.5, lw=0, label="target window for weak SFT")
     ax[1].axvline(sel["weak_step"], color="0.3", ls="--", lw=1)
     ax[1].annotate(f"weak SFT: step {sel['weak_step']}\nval {sel['weak_val_solve']:.2f}",
-                   (sel["weak_step"], sel["weak_val_solve"]), xytext=(8, -28), textcoords="offset points")
-    ax[1].set(xlabel="training step", ylabel="solve rate (confidence, S=8, greedy)", title="Solve rate",
+                   (sel["weak_step"], sel["weak_val_solve"]), xytext=(10, 20), textcoords="offset points")
+    ax[1].set(xlabel="training step (log scale)", ylabel="solve rate (confidence, S=8, greedy)", title="Solve rate",
+              xscale="log",
               ylim=(-0.02, 1.02))
     ax[1].legend(loc="lower right")
     _save(fig, "sft_training_curve.png")
@@ -63,7 +65,7 @@ def strategies():
         ax.set(xscale="log", xticks=[1, 2, 4, 8, 16], xticklabels=[1, 2, 4, 8, 16], xlabel="step budget S",
                title=c, ylim=(-0.02, 1.02))
         ax.set_ylabel("test solve rate (95% bootstrap CI)")
-        ax.legend()
+    axs[0][0].legend()
     _save(fig, "strategies_solve_rate.png")
 
 
