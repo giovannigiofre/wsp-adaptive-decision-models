@@ -106,7 +106,10 @@ A 17th position reads the grid and states a confidence in one of four values. It
     "s33b": """
 ## 3.3b The confidence token on a frozen denoiser
 
-__S33B__
+Same token, but the denoiser is frozen (the wd1 checkpoints from 3.1b), so the target is stationary; RL is plain REINFORCE on the Brier-shaped reward.
+
+**Shows:** the token learns to verify its own grid (AUROC 0.93 with RL, 0.98 with the probe) and beats the best post-hoc recalibration on the Brier score. Read from the puzzle alone, it states the base rate.
+**Does not show:** uncertainty about a reasoning process; checking a finished 4×4 grid is easy for this architecture.
 """,
     "s34a": """
 ## 3.4a Is there headroom in the unmasking order?
