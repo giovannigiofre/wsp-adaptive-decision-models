@@ -16,7 +16,7 @@ This is **not** a research paper and makes no novelty claims. The goal is to lea
 Overall plan, timeline and deliverables: [docs/PLAN.md](docs/PLAN.md). Reading list: [docs/REFERENCES.md](docs/REFERENCES.md).
 
 ## Status
-Phase 1 and phase 2 have both run end to end (phase 1 on pilot-sized samples). Start with [results/REPORT.md](results/REPORT.md), then the executed notebooks `notebooks/phase1_llada.ipynb` and `notebooks/phase2_sudoku_wd1.ipynb`.
+Phase 1 and phase 2 have both run end to end (phase 1 on pilot-sized samples). Start with [results/REPORT_SIMPLE.md](results/REPORT_SIMPLE.md) for a plain-language tour or [results/REPORT.md](results/REPORT.md) for the technical write-up, then the executed notebooks `notebooks/phase1_llada.ipynb` and `notebooks/phase2_sudoku_wd1.ipynb`.
 
 ## Structure
 - `docs/` plan, phase specs, references. `docs/archive/wsp/` keeps the earlier WSP adaptive-decision-model notes.
