@@ -25,3 +25,30 @@ PYTHONPATH=src python -m phase3.analysis 3.2b
 
 - Config: `configs/phase3.yaml` (`rl.ref_kl`, `rl.objective_defaults.grpo.kl`).
 - Code: `src/phase3/rl.py`, `src/phase3/objectives.py` (`grpo_loss`).
+- Hardware: Apple M5 24 GB, macOS 27.0.1, Python 3.12.13, torch 2.15.0, MPS, fp32. Seeds 0–2, 1500 steps.
+- Wall-clock: ran in the same launch as 3.1c (see there).
+- Results: `results/phase3/3.2b/` (`curves.csv`, `runs.csv`, `summary.csv`, `kl_to_start.png`). The arms without changes (wd1, REINFORCE, GRPO with KL) are seeds 0–2 of 3.1b and 3.2.
+
+## Outcome
+
+![KL to the start](../../results/phase3/3.2b/kl_to_start.png)
+
+Mean ± std over 3 seeds:
+
+| Arm | final test | log p̂ of valid rollouts, last 250 steps | groups skipped, last 250 steps |
+|---|---|---|---|
+| GRPO (KL 0.04) | 0.978 ± 0.006 | −7.8 | 0.77 |
+| REINFORCE + KL 0.04 | 0.978 ± 0.001 | −8.0 | 0.77 |
+| wd1 + KL 0.01 | 0.976 ± 0.005 | −8.0 | 0.77 |
+| wd1 + KL 0.04 | 0.896 ± 0.003 | −8.0 | 0.43 |
+| REINFORCE | 0.880 ± 0.011 | −12.2 | 0.89 |
+| GRPO, KL removed | 0.871 ± 0.006 | −12.3 | 0.90 |
+| wd1 | 0.860 ± 0.020 | −12.5 | 0.90 |
+
+Prediction check:
+- **"GRPO without KL falls back to REINFORCE's level (0.86–0.91)": right.** 0.871.
+- **"REINFORCE + KL reaches GRPO's level (0.95 or more)": right.** 0.978, equal to GRPO.
+- **"wd1 + KL ends at 0.93 or more for at least one weight, valid likelihood above −10": right.** 0.976 with weight 0.01. With weight 0.04 the penalty is too strong for wd1's smaller coefficients: the model stays close to the start and ends at 0.896.
+
+**Shows:** on this task the whole gap between GRPO and wd1/REINFORCE is the KL penalty towards the starting model. With it the likelihood of the model's own valid rollouts stops drifting down and the three objectives end at 0.98; without it they end at 0.86–0.88. This supports the phase 2 guess that the missing reference term was holding wd1 back.
+**Does not show:** that wd1 needs a KL term at scale, or what the upstream wd1 would do: its reference enters through the sampling, not the loss (3.1f). The KL weight needed tuning per objective (0.01 worked for wd1, 0.04 did not), and only two values were tried.
