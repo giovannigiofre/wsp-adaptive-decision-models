@@ -10,6 +10,10 @@ wd1 and positive-only runs. Data, model and sampler come from the phase 2 config
 which is how the reference policy enters the upstream wd1 code (github.com/xiaohangt/wd1, commit 1a2e254,
 wd1/trainers/rev_grpo_ref_pol_trainer.py, `generate`). The loss is unchanged, as upstream.
 
+`rl.ref_kl` > 0 adds, to a weighted-likelihood objective, a penalty towards the frozen start: ref_kl times
+the per-cell KL estimate exp(d) - d - 1 with d = log p_ref - log p (the estimator of the d1 GRPO trainer),
+summed over the non-given cells of every rollout of a kept group. This is not part of upstream wd1.
+
 Resumable (state.pt every eval), one CSV row per step. With `--exp ID` the per-step logs stay in the
 local cache and `python -m phase3.analysis compact ID` writes one row per evaluation to results/phase3/ID/.
 
@@ -101,7 +105,8 @@ def objective_params(rc: dict) -> dict:
 def run_name(rc: dict, seed: int, tag: str = "") -> str:
     params = "_".join(f"{k}{float(v):g}" for k, v in sorted(objective_params(rc).items()) if v is not None)
     parts = [rc["objective"], params, "" if rc["reward"] == "binary" else rc["reward"],
-             f"ref{rc['ref_mix']:g}" if rc.get("ref_mix", 0) else "", f"seed{seed}{tag}"]
+             f"ref{rc['ref_mix']:g}" if rc.get("ref_mix", 0) else "",
+             f"refkl{rc['ref_kl']:g}" if rc.get("ref_kl", 0) else "", f"seed{seed}{tag}"]
     return "_".join(p for p in parts if p)
 
 
@@ -137,6 +142,7 @@ def main():
     kind, params, reward_fn = KIND[rc["objective"]], objective_params(rc), REWARDS[rc["reward"]]
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
     mu, p_mask, ref_mix = rc["inner_steps"], rc["prompt_mask_prob"], rc.get("ref_mix", 0.0)
+    ref_kl = rc.get("ref_kl", 0.0) if kind == "weighted" else 0.0
     dev = get_device(a.device or base["runtime"]["device"])
     name = run_name(rc, a.seed, a.tag)
     if a.exp:
@@ -159,7 +165,7 @@ def main():
     model.load_state_dict(torch.load(init, map_location=dev))
     model.eval()  # no dropout during RL (rollouts and gradient passes), as in phase 2
     ref = None
-    if ref_mix or (kind == "grpo" and params["kl"]):   # frozen copy of the starting model
+    if ref_mix or ref_kl or (kind == "grpo" and params["kl"]):   # frozen copy of the starting model
         ref = copy.deepcopy(model)
         for p in ref.parameters():
             p.requires_grad_(False)
@@ -229,9 +235,16 @@ def main():
                     gw = WEIGHTED[rc["objective"]](r, **params)
                     gw.pos, gw.neg = gw.pos[keep], gw.neg[keep]
                     for _ in range(mu):
-                        logp, given = one_step_logprobs(model, Pk, Ok, p_mask)
+                        extra = prompt_mask(Pk, p_mask)   # same single random draw as before
+                        logp, given = one_step_logprobs(model, Pk, Ok, extra=extra)
                         lp = loglik(logp, Ok, given).view(-1, G)
                         loss = weighted_loss(lp, gw)
+                        if ref_kl:
+                            with torch.no_grad():
+                                rlp = cell_logp(one_step_logprobs(ref, Pk, Ok, extra=extra)[0], Ok)
+                            d = rlp - cell_logp(logp, Ok)
+                            kl_cells = ((torch.exp(d) - d - 1) * (~given)).sum(1).view(-1, G).sum(1)
+                            loss = loss + ref_kl * kl_cells.mean()
                         norms.append(update(loss)); losses.append(loss.item())
                     row.update(weight_diagnostics(gw.w_pos, vk))
                 else:   # grpo: old (and reference) per-cell log-probs under the masks of each inner step
@@ -272,7 +285,7 @@ def main():
     final_val, final_val_s1 = evaluate(val)
     final_test, final_test_s1 = evaluate(test)
     summ = {"name": name, "objective": rc["objective"], "objective_params": params,
-            "reward": rc["reward"], "ref_mix": ref_mix, "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
+            "reward": rc["reward"], "ref_mix": ref_mix, "ref_kl": ref_kl, "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
             "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,

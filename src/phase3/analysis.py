@@ -102,7 +102,8 @@ def compact(exp: str):
         win = pd.cut(df.step, [-1] + ev.step.tolist(), labels=ev.step.tolist()).astype(float)
         means = df[df.step > 0].groupby(win[df.step > 0], observed=True)[cols].mean().rename_axis("step").reset_index()
         cfg = {"run": j["name"], "objective": j["objective"], **j["objective_params"], "reward": j["reward"],
-               "ref_mix": j.get("ref_mix", 0.0), "tag": j.get("tag", ""), "seed": j["seed"]}
+               "ref_mix": j.get("ref_mix", 0.0), "ref_kl": j.get("ref_kl", 0.0), "tag": j.get("tag", ""),
+               "seed": j["seed"]}
         curves.append(ev.merge(means, on="step", how="left").assign(**cfg))
         reach = ev.step[ev.val_solve >= 0.7]
         runs.append({**cfg, "steps": j["steps"], "lr": j["lr"], "init": Path(j["init"]).name,
@@ -586,7 +587,52 @@ def exp_3_4b():
     print(ref.unstack("split").round(3).to_string())
 
 
-EXPERIMENTS: dict = {"3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
+def exp_3_2b():
+    """KL to the starting model: GRPO without it, REINFORCE and wd1 with it."""
+    exp = "3.2b"
+    c, r = load_many("3.2b", "3.2", "3.1b")
+    keep = lambda d: d[(d.exp != "3.1b") | (d.tau == 1.0)]   # noqa: E731
+    c, r = keep(c), keep(r)
+    c, r = c[c.seed <= 2], r[r.seed <= 2]
+    for d in (c, r):
+        d["ref_kl"] = d["ref_kl"].fillna(0.0)
+
+    def arm(row) -> str:
+        if row.objective == "grpo":
+            return "GRPO (KL 0.04)" if row.kl > 0 else "GRPO, KL removed"
+        if row.objective == "reinforce" and row.normalize is not True and row.normalize != 1.0:
+            return "REINFORCE + KL 0.04" if row.ref_kl > 0 else "REINFORCE"
+        if row.objective == "wd1" and row.beta == 1.0:
+            return f"wd1 + KL {row.ref_kl:g}" if row.ref_kl > 0 else "wd1"
+        return ""
+
+    c["arm"], r["arm"] = c.apply(arm, axis=1), r.apply(arm, axis=1)
+    c, r = c[c.arm != ""], r[r.arm != ""]
+    fig, ax = plt.subplots(1, 3, figsize=(13, 3.4))
+    for a, arms in ((ax[0], [("REINFORCE", C[2], "-"), ("REINFORCE + KL 0.04", C[2], "--"),
+                             ("GRPO (KL 0.04)", C[4], "--"), ("GRPO, KL removed", C[4], "-")]),
+                    (ax[1], [("wd1", C[0], "-"), ("wd1 + KL 0.01", C[0], "-."), ("wd1 + KL 0.04", C[0], "--")])):
+        for lab, col, ls in arms:
+            band(a, c[c.arm == lab], "val_solve", col, lab, ls=ls)
+        a.set(xlabel="RL step", ylabel="val solve rate (greedy, S=8)", ylim=(-0.02, 1.02))
+        a.legend(fontsize=8, loc="lower right", title="dashed = with KL to the start", title_fontsize=8)
+    ax[0].set_title("REINFORCE and GRPO")
+    ax[1].set_title("wd1")
+    for lab, col, ls in [("wd1", C[0], "-"), ("wd1 + KL 0.04", C[0], "--"), ("REINFORCE", C[2], "-"),
+                         ("REINFORCE + KL 0.04", C[2], "--")]:
+        band(ax[2], c[(c.arm == lab) & (c.step > 0)], "logp_valid", col, lab, ls=ls)
+    ax[2].set(title="Estimated likelihood of valid rollouts", xlabel="RL step", ylabel="one-step log p̂ (25-step mean)")
+    ax[2].legend(fontsize=8, loc="lower left")
+    save(fig, exp, "kl_to_start.png")
+    summ = seed_table(r, ["arm"])
+    late = c[c.step > c.step.max() - 250].groupby("arm")[["logp_valid", "logp_invalid", "frac_skipped"]].mean().add_suffix(
+        "_last_250_steps").reset_index()
+    summ = summ.merge(late, on="arm").sort_values("final_test_mean", ascending=False)
+    summ.round(4).to_csv(OUT / exp / "summary.csv", index=False)
+    show(summary=summ)
+
+
+EXPERIMENTS: dict = {"3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
                      "3.1d": exp_3_1d, "3.1e": exp_3_1e, "3.1f": exp_3_1f, "3.2": exp_3_2}
 
 

@@ -47,6 +47,12 @@ main() {
               echo "$rl --seed $s --set $hs rl.objective=grpo"
               echo "$rl --seed $s --set $hs rl.objective=supervised"
             done ;;
+      3.2b) for s in 0 1 2; do
+              echo "$rl --seed $s --set $hs rl.objective=grpo $op.kl=0"
+              echo "$rl --seed $s --set $hs rl.objective=reinforce rl.ref_kl=0.04"
+              echo "$rl --seed $s --set $hs rl.ref_kl=0.01"
+              echo "$rl --seed $s --set $hs rl.ref_kl=0.04"
+            done ;;
       3.3)  for s in 0 1 2; do for p in last first; do for m in rl probe; do
               echo "-m phase3.conf_token train --exp 3.3 --seed $s --place $p --mode $m --set $hs"; done; done; done ;;
       3.4b) for s in 0 1 2 3 4; do for f in probs hidden; do for i in zero confidence; do
@@ -58,7 +64,7 @@ main() {
   }
 
   runs | xargs -P "${JOBS:-3}" -L 1 "$PY"
-  case "$EXP" in 3.1[a-f]|3.2) "$PY" -m phase3.analysis compact "$EXP" ;; esac
+  case "$EXP" in 3.1[a-f]|3.2|3.2b) "$PY" -m phase3.analysis compact "$EXP" ;; esac
 }
 
 main "$@"

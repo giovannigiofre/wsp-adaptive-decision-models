@@ -158,3 +158,10 @@ def test_grpo_loss_sign_and_clipping():
     same, _ = grpo_loss(old, old, torch.zeros(2), ~given, 0.5, kl=1.0, ref_cell_logp=old)
     diff, _ = grpo_loss(old, old, torch.zeros(2), ~given, 0.5, kl=1.0, ref_cell_logp=old - 1.0)
     assert same.abs() < 1e-6 and diff > 0
+
+
+def test_run_name_with_reference_kl():
+    rc = {"objective": "wd1", "objective_params": {}, "objective_defaults": DEFAULTS, "reward": "binary",
+          "ref_kl": 0.04}
+    assert run_name(rc, 0) == "wd1_beta1_tau1_refkl0.04_seed0"
+    assert run_name({**rc, "ref_kl": 0.0}, 0) == "wd1_beta1_tau1_seed0"
