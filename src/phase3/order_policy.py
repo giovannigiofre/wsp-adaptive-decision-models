@@ -169,7 +169,8 @@ def train_cmd(a):
     base = load_cfg(cfg["base_config"])
     oc = cfg["order_policy"]
     dev = get_device(a.device or base["runtime"]["device"])
-    name = f"{a.teacher or 'reinforce'}_{a.features}_{a.init}_lr{a.lr or oc['lr']:g}_seed{a.seed}{a.tag}"
+    lr = a.lr or oc["lr"][a.features]
+    name = f"{a.teacher or 'reinforce'}_{a.features}_{a.init}_lr{lr:g}_seed{a.seed}{a.tag}"
     out, ck = OUT / a.exp, CACHE / a.exp / "ckpt"
     out.mkdir(parents=True, exist_ok=True)
     ck.mkdir(parents=True, exist_ok=True)
@@ -184,7 +185,7 @@ def train_cmd(a):
         p.requires_grad_(False)
     seed_all(a.seed)
     policy = OrderPolicy(a.features, base["model"]["d_model"], oc["width"], a.init, oc["conf_scale"]).to(dev)
-    lr, steps, B, G = a.lr or oc["lr"], a.steps or oc["steps"], oc["batch_puzzles"], oc["group_size"]
+    steps, B, G = a.steps or oc["steps"], oc["batch_puzzles"], oc["group_size"]
     opt = torch.optim.Adam(policy.parameters(), lr=lr)
     fields = ["step", "train_reward", "loss", "val_solve", "val_agree_conf", "elapsed_s"]
     v, ag = evaluate(model, policy, val)

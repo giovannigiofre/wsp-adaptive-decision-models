@@ -254,7 +254,8 @@ def baseline_cmd(a):
                **{k.replace("implicit", "raw"): v for k, v in mt.items() if k.startswith("implicit")}}
         for tag, slope_only in (("slope", True), ("platt", False)):
             f, theta = fit_platt(av["implicit"], av["solved"], slope_only)
-            row.update(calib_metrics(f(at["implicit"]), at["solved"], tag))
+            at[tag] = f(at["implicit"])
+            row.update(calib_metrics(at[tag], at["solved"], tag))
             row[f"{tag}_params"] = str([round(x, 3) for x in theta])
         rows.append(row)
         pd.DataFrame(at).round(4).to_csv(out / f"baseline_{label}_test.csv", index=False)
