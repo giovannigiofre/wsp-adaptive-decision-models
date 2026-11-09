@@ -1,0 +1,7 @@
+arm,likelihood,val_at_1000_mean,val_at_1000_std,min_val_mean,logp_valid_steps_1_50,logp_valid_steps_751_1000,logp_valid_change,final_test_mean,final_test_std
+positive-only,onestep,0.9891,0.0038,0.1082,-6.5328,-4.6632,1.8696,,
+positive-only,sequential,0.9519,0.01,0.3017,-3.943,-1.6927,2.2503,0.9274,0.0072
+wd1,onestep,0.8415,0.01,0.4197,-7.4235,-12.1131,-4.6896,,
+wd1,sequential,0.3334,0.0162,0.2831,-4.1572,-5.3481,-1.1908,0.3361,0.0136
+"wd1, floored",onestep,0.9825,0.005,0.4197,-6.8439,-5.8192,1.0248,,
+"wd1, floored",sequential,0.8153,0.0083,0.4197,-4.1304,-2.2954,1.835,0.8213,0.0134
