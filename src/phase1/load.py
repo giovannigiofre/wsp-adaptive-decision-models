@@ -58,8 +58,9 @@ def load_model(cfg: dict | None = None, device: str | None = None):
     t0 = time.time()
     tok = AutoTokenizer.from_pretrained(m["id"], revision=m["revision"], trust_remote_code=True)
     model = AutoModel.from_pretrained(m["id"], revision=m["revision"], trust_remote_code=True,
-                                      torch_dtype=dtype, low_cpu_mem_usage=True)
-    model = model.to(dev).eval()
+                                      torch_dtype=dtype, low_cpu_mem_usage=True,
+                                      device_map={"": str(dev)})  # load straight to the device, no CPU copy
+    model = model.eval()
     if tok.padding_side != "left":
         tok.padding_side = "left"
     return model, tok, dev, time.time() - t0

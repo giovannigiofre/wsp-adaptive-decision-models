@@ -108,8 +108,9 @@ def load_task(task: str) -> list[dict]:
 
 
 def subsample(items: list[dict], n: int, seed: int) -> list[dict]:
-    idx = np.random.default_rng(seed).choice(len(items), size=min(n, len(items)), replace=False)
-    return [items[i] for i in sorted(idx)]
+    # nested prefixes: subsample(n1) is a subset of subsample(n2) for n1 < n2 (runs can be extended)
+    idx = np.random.default_rng(seed).permutation(len(items))[:n]
+    return [items[i] for i in idx]
 
 
 # ---------------------------------------------------------------- d1 parsing helpers

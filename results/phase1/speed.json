@@ -1,0 +1,49 @@
+{
+ "smoke_total_s": 56.105424880981445,
+ "smoke_s_per_step": 0.8766472637653351,
+ "timing": [
+  {
+   "task": "sudoku",
+   "prompt_len": 220,
+   "gen_length": 64,
+   "seq_len": 284,
+   "s_per_step": 1.0570862591266632
+  },
+  {
+   "task": "sudoku",
+   "prompt_len": 220,
+   "gen_length": 128,
+   "seq_len": 348,
+   "s_per_step": 1.1753320097923279
+  },
+  {
+   "task": "countdown",
+   "prompt_len": 156,
+   "gen_length": 64,
+   "seq_len": 220,
+   "s_per_step": 0.7717893719673157
+  },
+  {
+   "task": "countdown",
+   "prompt_len": 156,
+   "gen_length": 128,
+   "seq_len": 284,
+   "s_per_step": 1.2994398772716522
+  },
+  {
+   "task": "gsm8k",
+   "prompt_len": 148,
+   "gen_length": 128,
+   "seq_len": 276,
+   "s_per_step": 1.3250553607940674
+  },
+  {
+   "task": "gsm8k",
+   "prompt_len": 148,
+   "gen_length": 256,
+   "seq_len": 404,
+   "s_per_step": 1.7432973682880402
+  }
+ ],
+ "load_s": 8.901793003082275
+}

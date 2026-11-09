@@ -73,7 +73,8 @@ def strategy_scores(logits, x0, strategy, generator=None):
     if strategy in ('confidence', 'low_confidence'):
         scores = conf
     elif strategy == 'random':
-        scores = torch.rand(x0.shape, device=x0.device, generator=generator)
+        dev = generator.device if generator is not None else x0.device
+        scores = torch.rand(x0.shape, device=dev, generator=generator).to(x0.device)
     elif strategy == 'margin':
         top2 = torch.topk(p, k=2, dim=-1).values
         scores = top2[..., 0] - top2[..., 1]
