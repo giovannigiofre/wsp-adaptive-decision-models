@@ -1,6 +1,6 @@
 # Diffusion language models on a MacBook, in plain words
 
-This is the simplified companion to [REPORT.md](REPORT.md). It covers the same two phases with less jargon and more "why". Numbers are the same ones as in the full report; nothing new was run for this page. It is a learning exercise, not research, and makes no novelty claims.
+This is the simplified companion to [REPORT.md](REPORT.md). It covers the same three phases with less jargon and more "why". Numbers are the same ones as in the full report; nothing new was run for this page. It is a learning exercise, not research, and makes no novelty claims.
 
 Where a sentence starts with *Likely why*, it is an interpretation that was **not** tested.
 
@@ -80,6 +80,24 @@ Two smaller findings:
 
 ![calibration before and after RL](phase2/calibration_before_after.png)
 
+## Phase 3: taking the RL result apart
+
+Phase 3 used the toy to ask *why* positive-only beat wd1, with about 240 short training runs. Each experiment had a prediction written down before it ran; about a third were wrong.
+
+| Question | What we saw | Why |
+|---|---|---|
+| Was 500 steps too early? | No. At 2,000 steps positive-only still leads, 0.997 to 0.907. | wd1 runs out of signal: late in training 9 groups out of 10 have all-equal scores and teach nothing. |
+| Why does positive-only collapse early? | Because its weights are almost flat: about half of the "reinforce this" weight lands on *invalid* attempts. Make the weights selective and the collapse is gone. | The model was being taught to repeat its own mistakes. |
+| Does the starting model matter? | Completely. From a snapshot 10 training steps earlier, positive-only destroys the model (0%). From a model trained to convergence on little data, it rises and then collapses. wd1 improves from every start. | The phase 2 start was a model about to become good on its own; "sharpen what you have" works only there. |
+| Why is wd1 slow? | Its push-down has no limit: the likelihood of its own *correct* attempts keeps falling. Capping that push (a floor, or a small penalty for drifting from the start) lifts it from 0.86 to 0.98–0.99. | Push up and push down exactly balance in wd1. Tilt it either way and the behaviour changes completely; tilt it towards push-down (β = 2) and the model dies. |
+| What is the best label-free recipe here? | The plainest one: ordinary training on your own valid attempts. About 100% from every start. | *Only* because in this toy a valid grid is always the right answer and valid attempts exist from the start. |
+| Can the model learn in which order to fill cells? | Some. An oracle order solves 98% with the same weak model (confidence rule: 56%). RL rediscovers the confidence rule by itself and, with more information, reaches 67%. | Knowing which cell you are right about is almost as hard as solving the puzzle. |
+| Can it learn to say how confident it is? | Yes, if its abilities are not changing while it learns: it then checks its own grid well (Brier 0.03 against 0.07 for the best after-the-fact fix). Trained while still improving, it fails. | A moving target plus flat weights: it locked onto one value and stopped exploring. |
+
+![starting model](phase3/3.1d/starting_model.png)
+
+![order policy](phase3/3.4b/order_policy.png)
+
 ## What did not go well
 
 - **Phase 1 samples are tiny.** 12 Sudoku, 12 Countdown and 5 GSM8K examples instead of the planned 100/100/50, because each answer takes about a minute. The error bars are ±20 to ±40 points. These are pilot numbers and cannot be compared with published ones.
@@ -90,14 +108,16 @@ Two smaller findings:
 - **The toy task is too easy.** The interesting regime exists only because we started from a half-trained snapshot, which is an artificial and fragile setup.
 - **The RL is simplified.** 0/1 rewards, no "stay close" term, 500 steps, 3 runs per setting, one set of hyper-parameters.
 - **Measurements are noisy.** The laptop GPU is not perfectly repeatable, and both phases ran at the same time, so timings are pessimistic.
+- **Phase 3 predictions were often wrong**, in the right direction for honesty but a reminder of how little intuition transfers: β = 2 did not just "do worse", it destroyed the model; a graded reward did not help, it killed positive-only; a head trained with the answers was no better than RL.
+- **Two phase 3 launches took over two hours** each, above the limit set for a single unattended run, because CPU and GPU jobs slowed each other. Some order-policy runs were moved to the CPU, so that experiment mixes devices (recorded per run).
 
-## Open questions for a next phase
+## Open questions after phase 3
 
-1. Would wd1 catch up with longer runs? It was still improving at step 500.
-2. Does positive-only still collapse when the weights are made sharper, so that invalid attempts get almost no weight?
-3. How much of wd1's "less likely" push is the right amount: all, half, none?
-4. Do the conclusions change with a different starting model or a graded reward instead of 0/1?
-5. Can RL be rewarded for honest confidence, so it does not become over-confident?
+The five questions phase 2 left were all answered on the toy (no; no; less than all; yes, completely; yes, on a frozen model). What is left is whether any of it survives a change of scale:
+
+1. Is wd1's push-down still the bottleneck on a pretrained dLLM, where the likelihood estimate is noisier and rewards are sparser?
+2. Does the starting-model dependence show up when the start is a pretrained model rather than a half-trained toy?
+3. Is there a cheap order policy that transfers between denoisers?
 
 ## Mini glossary
 

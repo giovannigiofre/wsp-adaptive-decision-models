@@ -105,6 +105,14 @@ Phase 2 showed that order matters for the weak model: one cell per step solves 0
 - **Evaluation.** Test solve rate against `random`, `confidence`, `margin`, `entropy` at one cell per step, 5 seeds. Then: how similar is the learned order to the confidence order (rank correlation), and does it transfer to an RL-tuned denoiser from 3.1?
 - Optional: several cells per step with a budget S = 8.
 
+## Follow-ups added while running the phase
+
+Not in the plan above; each has a README with a prediction committed before its runs.
+
+- **3.2b** Why GRPO beat wd1 and REINFORCE: remove its KL term, add the same term to REINFORCE and to wd1 (`rl.ref_kl`).
+- **3.1g** Rerun the variants that beat wd1 from the phase 2 start (filtered imitation, self-training, floored wd1, wd1 + KL) from the two harder starts of 3.1d.
+- **3.3b** The confidence token on a frozen denoiser, so its target is stationary; REINFORCE instead of wd1 for the token.
+
 ## 3.5 Phase 3 summary
 
 `results/phase3/SUMMARY.md`: for each track the question, the prediction, what happened, and what it does and does not show. Then update `results/REPORT.md` and `results/REPORT_SIMPLE.md` with a short phase 3 section and at most three new figures. Keep every negative and flat result.

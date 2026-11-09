@@ -12,12 +12,12 @@ This is **not** a research paper and makes no novelty claims. The goal is to lea
 |---|---|---|---|
 | 1 | Explore a real dLLM (LLaDA-8B-Instruct): visualise unmasking order, compare unmasking strategies and step budgets, check whether token confidence predicts errors | Inference only, MPS | [docs/PHASE1_LLADA_ON_MAC.md](docs/PHASE1_LLADA_ON_MAC.md) |
 | 2 | Train a tiny masked diffusion model from scratch on 4×4 Sudoku, then fine-tune it with RL using a hand-written implementation of the wd1 weighted policy objective; compare accuracy and confidence before/after RL | Training, MPS | [docs/PHASE2_TOY_SUDOKU_DLLM.md](docs/PHASE2_TOY_SUDOKU_DLLM.md) |
-| 3 (in progress: 3.0 done) | Use the toy model as an RL playground: take wd1 apart, compare it with simpler objectives, reward honest confidence, learn the unmasking order | Training, MPS | [docs/PHASE3_RL_PLAYGROUND.md](docs/PHASE3_RL_PLAYGROUND.md) |
+| 3 | Use the toy model as an RL playground: take wd1 apart, compare it with simpler objectives, reward honest confidence, learn the unmasking order | Training, MPS | [docs/PHASE3_RL_PLAYGROUND.md](docs/PHASE3_RL_PLAYGROUND.md) |
 
 Overall plan, timeline and deliverables: [docs/PLAN.md](docs/PLAN.md). Reading list: [docs/REFERENCES.md](docs/REFERENCES.md).
 
 ## Status
-Phase 1 and phase 2 have both run end to end (phase 1 on pilot-sized samples). Start with [results/REPORT_SIMPLE.md](results/REPORT_SIMPLE.md) for a plain-language tour or [results/REPORT.md](results/REPORT.md) for the technical write-up, then the executed notebooks `notebooks/phase1_llada.ipynb` and `notebooks/phase2_sudoku_wd1.ipynb`.
+All three phases have run end to end (phase 1 on pilot-sized samples). Start with [results/REPORT_SIMPLE.md](results/REPORT_SIMPLE.md) for a plain-language tour or [results/REPORT.md](results/REPORT.md) for the technical write-up, then the executed notebooks `notebooks/phase1_llada.ipynb`, `notebooks/phase2_sudoku_wd1.ipynb` and `notebooks/phase3_rl_playground.ipynb`.
 
 ## Structure
 - `docs/` plan, phase specs, references. `docs/archive/wsp/` keeps the earlier WSP adaptive-decision-model notes.

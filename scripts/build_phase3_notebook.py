@@ -229,7 +229,7 @@ if HAVE_CKPT:
     ok_conf = (conf.grid == test.solutions[hard]).all(1)
     i = int((orc & ~ok_conf).nonzero()[0])      # first puzzle the oracle solves and the confidence rule does not
     print("puzzle:"); print(to_str(test.puzzles[hard][i].tolist()))
-    print("\\nconfidence order (wrong cells marked by comparing with the solution below):"); print(to_str(conf.grid[i].tolist()))
+    print("\\nconfidence order (compare with the solution below):"); print(to_str(conf.grid[i].tolist()))
     print("\\nsolution, reached by the oracle order with the same denoiser:"); print(to_str(test.solutions[hard][i].tolist()))
     print("\\ncommit step per cell under the confidence rule (-1 = given):"); print(conf.commit_step[i].view(4, 4).numpy())
     print("\\n12-hidden-cell test puzzles solved: confidence", round(ok_conf.float().mean().item(), 3), "| oracle", round(orc.float().mean().item(), 3))
