@@ -10,6 +10,9 @@ wd1 and positive-only runs. Data, model and sampler come from the phase 2 config
 which is how the reference policy enters the upstream wd1 code (github.com/xiaohangt/wd1, commit 1a2e254,
 wd1/trainers/rev_grpo_ref_pol_trainer.py, `generate`). The loss is unchanged, as upstream.
 
+`rl.likelihood: sequential` replaces the one-step estimate in the weighted objectives by the fixed-order
+sequential likelihood (16 forward passes per inner step), which phase 2 used as the reference.
+
 `rl.ref_kl` > 0 adds, to a weighted-likelihood objective, a penalty towards the frozen start: ref_kl times
 the per-cell KL estimate exp(d) - d - 1 with d = log p_ref - log p (the estimator of the d1 GRPO trainer),
 summed over the non-given cells of every rollout of a kept group. This is not part of upstream wd1.
@@ -80,6 +83,25 @@ def loglik(logp: torch.Tensor, completions: torch.Tensor, given: torch.Tensor) -
     return (cell_logp(logp, completions) * (~given)).sum(1)
 
 
+def sequential_cell_logp(model, puzzles: torch.Tensor, completions: torch.Tensor,
+                         extra: torch.Tensor | None = None) -> torch.Tensor:
+    """(N,16) per-cell log p under a fixed row-major order: cell i is predicted with the givens (minus
+    the prompt mask `extra`) and all earlier non-given cells revealed. 16 forward passes, with gradient.
+    Same construction as phase2.rl_wd1.sequential_loglik, which phase 2 used as the 'true' likelihood."""
+    given = puzzles != 0
+    shown = given if extra is None else given & ~extra
+    out = torch.zeros(completions.shape, device=completions.device, dtype=torch.float32)
+    for i in range(16):
+        if not (~given[:, i]).any():
+            continue
+        visible = shown.clone()
+        visible[:, :i] |= ~given[:, :i]
+        inp = torch.where(visible, completions, torch.zeros_like(completions))
+        lp_i = F.log_softmax(model(digits_to_tokens(inp)).float()[:, i], -1)
+        out[:, i] = lp_i.gather(-1, (completions[:, i] - 1).unsqueeze(-1)).squeeze(-1)
+    return out
+
+
 def predictive_entropy(logp: torch.Tensor, given: torch.Tensor) -> torch.Tensor:
     """Mean entropy (nats, max ln 4) of the one-step predictive distribution over non-given cells."""
     ent = -(logp.exp() * logp).sum(-1)
@@ -106,7 +128,8 @@ def run_name(rc: dict, seed: int, tag: str = "") -> str:
     params = "_".join(f"{k}{float(v):g}" for k, v in sorted(objective_params(rc).items()) if v is not None)
     parts = [rc["objective"], params, "" if rc["reward"] == "binary" else rc["reward"],
              f"ref{rc['ref_mix']:g}" if rc.get("ref_mix", 0) else "",
-             f"refkl{rc['ref_kl']:g}" if rc.get("ref_kl", 0) else "", f"seed{seed}{tag}"]
+             f"refkl{rc['ref_kl']:g}" if rc.get("ref_kl", 0) else "",
+             "seqlik" if rc.get("likelihood", "onestep") == "sequential" else "", f"seed{seed}{tag}"]
     return "_".join(p for p in parts if p)
 
 
@@ -143,6 +166,7 @@ def main():
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
     mu, p_mask, ref_mix = rc["inner_steps"], rc["prompt_mask_prob"], rc.get("ref_mix", 0.0)
     ref_kl = rc.get("ref_kl", 0.0) if kind == "weighted" else 0.0
+    sequential = rc.get("likelihood", "onestep") == "sequential"   # weighted objectives only
     dev = get_device(a.device or base["runtime"]["device"])
     name = run_name(rc, a.seed, a.tag)
     if a.exp:
@@ -236,8 +260,13 @@ def main():
                     gw.pos, gw.neg = gw.pos[keep], gw.neg[keep]
                     for _ in range(mu):
                         extra = prompt_mask(Pk, p_mask)   # same single random draw as before
-                        logp, given = one_step_logprobs(model, Pk, Ok, extra=extra)
-                        lp = loglik(logp, Ok, given).view(-1, G)
+                        if sequential:
+                            given = Pk != 0
+                            lp = (sequential_cell_logp(model, Pk, Ok, extra) * (~given)).sum(1).view(-1, G)
+                            logp = None
+                        else:
+                            logp, given = one_step_logprobs(model, Pk, Ok, extra=extra)
+                            lp = loglik(logp, Ok, given).view(-1, G)
                         loss = weighted_loss(lp, gw)
                         if ref_kl:
                             with torch.no_grad():
@@ -265,7 +294,8 @@ def main():
                 lpd = lp.detach()
                 row.update(logp_valid=lpd[vk].mean().item() if vk.any() else float("nan"),
                            logp_invalid=lpd[~vk].mean().item() if (~vk).any() else float("nan"),
-                           pred_entropy=predictive_entropy(logp.detach(), given).item())
+                           pred_entropy=predictive_entropy(logp.detach(), given).item() if logp is not None
+                           else float("nan"))
         if losses:
             row.update(loss=sum(losses) / len(losses), grad_norm=sum(norms) / len(norms))
         if step % rc["eval_every"] == 0 or step == steps:
@@ -285,7 +315,8 @@ def main():
     final_val, final_val_s1 = evaluate(val)
     final_test, final_test_s1 = evaluate(test)
     summ = {"name": name, "objective": rc["objective"], "objective_params": params,
-            "reward": rc["reward"], "ref_mix": ref_mix, "ref_kl": ref_kl, "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
+            "reward": rc["reward"], "ref_mix": ref_mix, "ref_kl": ref_kl,
+            "likelihood": "sequential" if sequential else "onestep", "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
             "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,

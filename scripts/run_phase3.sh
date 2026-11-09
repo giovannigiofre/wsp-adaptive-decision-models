@@ -44,6 +44,16 @@ main() {
                 echo "$rl --seed $s $st --set $hs rl.ref_kl=0.01"
                 echo "$rl --seed $s $st --set $hs $op.floor=-12"
               done; done ;;
+      3.6a) for s in 0 1 2; do
+              echo "$rl --seed $s --set rl.max_rl_steps=1000 rl.likelihood=sequential"
+              echo "$rl --seed $s --set rl.max_rl_steps=1000 rl.likelihood=sequential $op.floor=-9"
+              echo "$rl --seed $s --set rl.max_rl_steps=1000 rl.likelihood=sequential $op.beta=0"
+            done ;;
+      3.6b) for s in 0 1 2; do
+              for o in "" "$op.floor=-12" "rl.objective=filtered" "rl.objective=self_diffusion"; do
+                echo "$rl --seed $s --init $SFT/step_000090.pt --tag _sft90 --set $hs $o"
+                echo "$rl --seed $s --set $hs rl.reward=lenient $o"
+              done; done ;;
       3.2)  for s in 3 4; do                                  # wd1 and positive-only, seeds 0-2, are in 3.1b
               echo "$rl --seed $s --set $hs"
               echo "$rl --seed $s --set $hs $op.beta=0"; done
@@ -74,7 +84,7 @@ main() {
   }
 
   runs | xargs -P "${JOBS:-3}" -L 1 "$PY"
-  case "$EXP" in 3.1[a-g]|3.2|3.2b) "$PY" -m phase3.analysis compact "$EXP" ;; esac
+  case "$EXP" in 3.1[a-g]|3.2|3.2b|3.6a|3.6b) "$PY" -m phase3.analysis compact "$EXP" ;; esac
 }
 
 main "$@"

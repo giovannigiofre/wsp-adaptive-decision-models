@@ -23,4 +23,15 @@ def graded(grid: torch.Tensor, puzzle: torch.Tensor) -> torch.Tensor:
     return units_ok * givens_ok
 
 
-REWARDS: dict[str, Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {"binary": binary, "graded": graded}
+def lenient(grid: torch.Tensor, puzzle: torch.Tensor) -> torch.Tensor:
+    """1 if every row and column contains each digit once and the givens are kept; boxes are ignored.
+    A weaker checker than correctness: a Latin square that breaks the 2x2 boxes is rewarded."""
+    g = grid.long()
+    oh = torch.nn.functional.one_hot((g - 1).clamp(0, 3), 4)
+    rows_cols_ok = (oh[:, GROUPS_T[:8].to(g.device)].sum(2) == 1).all(2).all(1)
+    givens_ok = ((puzzle == 0) | (puzzle == g)).all(1) & ((g >= 1) & (g <= 4)).all(1)
+    return (rows_cols_ok & givens_ok).float()
+
+
+REWARDS: dict[str, Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {"binary": binary, "graded": graded,
+                                                                            "lenient": lenient}

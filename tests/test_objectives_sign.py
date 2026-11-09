@@ -165,3 +165,28 @@ def test_run_name_with_reference_kl():
           "ref_kl": 0.04}
     assert run_name(rc, 0) == "wd1_beta1_tau1_refkl0.04_seed0"
     assert run_name({**rc, "ref_kl": 0.0}, 0) == "wd1_beta1_tau1_seed0"
+
+
+def test_sequential_cell_logp_matches_phase2_and_one_step_with_one_hidden_cell():
+    from phase2.rl_wd1 import sequential_loglik
+    from phase3.rl import sequential_cell_logp
+    torch.manual_seed(2)
+    model = TinyDLLM(n_layers=1, d_model=32, n_heads=2, dropout=0.0).eval()
+    P, O, _ = _group()
+    with torch.no_grad():
+        seq = (sequential_cell_logp(model, P, O) * (P == 0)).sum(1)
+        assert torch.allclose(seq, sequential_loglik(model, P, O), atol=1e-5)
+    one = P.clone()
+    one[0, 7] = 0
+    one[0, [0, 3, 6, 9, 12, 15]] = O[0, [0, 3, 6, 9, 12, 15]]
+    with torch.no_grad():
+        logp, given = one_step_logprobs(model, one[:1], O[:1])
+        assert torch.allclose((sequential_cell_logp(model, one[:1], O[:1]) * (~given)).sum(1), loglik(logp, O[:1], given))
+    lp = (sequential_cell_logp(model, P, O) * (P == 0)).sum(1)
+    assert lp.requires_grad
+
+
+def test_run_name_sequential():
+    rc = {"objective": "wd1", "objective_params": {}, "objective_defaults": DEFAULTS, "reward": "binary",
+          "likelihood": "sequential"}
+    assert run_name(rc, 1) == "wd1_beta1_tau1_seqlik_seed1"

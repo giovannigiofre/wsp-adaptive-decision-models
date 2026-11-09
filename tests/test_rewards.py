@@ -28,3 +28,13 @@ def test_graded_reward():
     assert abs(r[1].item() - 9 / 12) < 1e-6        # one wrong cell breaks its row, column and box
     assert ((REWARDS["graded"](torch.stack([sol, broken]), puzzle.repeat(2, 1)) == 1.0)
             == REWARDS["binary"](torch.stack([sol, broken]), puzzle.repeat(2, 1)).bool()).all()
+
+
+def test_lenient_reward_accepts_a_latin_square_that_breaks_the_boxes():
+    puzzle, sol, broken, other = _cases()
+    latin = torch.tensor([1, 2, 3, 4, 2, 3, 4, 1, 3, 4, 1, 2, 4, 1, 2, 3])   # rows and columns fine, boxes not
+    empty = torch.zeros(16, dtype=torch.long)
+    r = REWARDS["lenient"](torch.stack([sol, broken, latin]), torch.stack([puzzle, puzzle, empty]))
+    assert r.tolist() == [1.0, 0.0, 1.0]
+    assert REWARDS["binary"](latin[None], empty[None]).tolist() == [0.0]
+    assert REWARDS["lenient"](other[None], puzzle[None]).tolist() == [0.0]      # givens still count

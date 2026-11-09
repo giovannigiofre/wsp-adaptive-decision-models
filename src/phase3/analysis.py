@@ -102,7 +102,8 @@ def compact(exp: str):
         win = pd.cut(df.step, [-1] + ev.step.tolist(), labels=ev.step.tolist()).astype(float)
         means = df[df.step > 0].groupby(win[df.step > 0], observed=True)[cols].mean().rename_axis("step").reset_index()
         cfg = {"run": j["name"], "objective": j["objective"], **j["objective_params"], "reward": j["reward"],
-               "ref_mix": j.get("ref_mix", 0.0), "ref_kl": j.get("ref_kl", 0.0), "tag": j.get("tag", ""),
+               "ref_mix": j.get("ref_mix", 0.0), "ref_kl": j.get("ref_kl", 0.0),
+               "likelihood": j.get("likelihood", "onestep"), "tag": j.get("tag", ""),
                "seed": j["seed"]}
         curves.append(ev.merge(means, on="step", how="left").assign(**cfg))
         reach = ev.step[ev.val_solve >= 0.7]
@@ -464,6 +465,106 @@ def exp_3_1g():
     show(summary=summ)
 
 
+def exp_3_6a():
+    """Sequential likelihood in the loss (1000 steps) against the one-step runs of 3.1b/3.1c at matched steps."""
+    exp = "3.6a"
+    c, r = load_many("3.6a", "3.1b", "3.1c")
+    for d in (c, r):
+        d["likelihood"] = d["likelihood"].fillna("onestep")
+    c, r = c[c.tau == 1.0], r[r.tau == 1.0]
+
+    def arm(row) -> str:
+        if row.beta == 0.0:
+            return "positive-only"
+        if row.floor == row.floor:
+            return "wd1, floored"
+        return "wd1"
+
+    c["arm"], r["arm"] = c.apply(arm, axis=1), r.apply(arm, axis=1)
+    c = c[c.beta.isin([0.0, 1.0]) & ~((c.arm == "wd1, floored") & (c.floor == -15))]
+    r = r[r.beta.isin([0.0, 1.0]) & ~((r.arm == "wd1, floored") & (r.floor == -15))]
+    cols = {"wd1": C[0], "wd1, floored": C[2], "positive-only": C[1]}
+    fig, ax = plt.subplots(1, 2, figsize=(10, 3.5))
+    for lab, col in cols.items():
+        for lik, ls in (("onestep", "-"), ("sequential", "--")):
+            d = c[(c.arm == lab) & (c.likelihood == lik) & (c.step <= 1000)]
+            band(ax[0], d, "val_solve", col, f"{lab}, {lik}", ls=ls)
+            if lab != "positive-only":
+                band(ax[1], d[d.step > 0], "logp_valid", col, f"{lab}, {lik}", ls=ls)
+    ax[0].set(title="Validation (dashed = sequential likelihood in the loss)", xlabel="RL step",
+              ylabel="val solve rate (greedy, S=8)", ylim=(-0.02, 1.02))
+    ax[1].set(title="Log-likelihood of valid rollouts, each by its own estimate", xlabel="RL step",
+              ylabel="log p̂ of valid rollouts (25-step mean)")
+    ax[0].legend(fontsize=7, loc="lower right")
+    ax[1].legend(fontsize=7, loc="lower left")
+    save(fig, exp, "sequential_likelihood.png")
+    v1000 = c[c.step == 1000].groupby(["arm", "likelihood"]).val_solve.agg(["mean", "std"]).add_prefix("val_at_1000_")
+    lo = c.groupby(["arm", "likelihood", "seed"]).val_solve.min().groupby(["arm", "likelihood"]).mean().rename("min_val_mean")
+    first = c[(c.step > 0) & (c.step <= 50)].groupby(["arm", "likelihood"]).logp_valid.mean().rename("logp_valid_steps_1_50")
+    last = c[(c.step > 750) & (c.step <= 1000)].groupby(["arm", "likelihood"]).logp_valid.mean().rename("logp_valid_steps_751_1000")
+    summ = pd.concat([v1000, lo, first, last], axis=1).reset_index()
+    summ["logp_valid_change"] = summ.logp_valid_steps_751_1000 - summ.logp_valid_steps_1_50
+    fin = r[r.likelihood == "sequential"].groupby("arm").agg(final_test_mean=("final_test", "mean"),
+                                                             final_test_std=("final_test", "std")).reset_index()
+    fin["likelihood"] = "sequential"
+    summ = summ.merge(fin, on=["arm", "likelihood"], how="left")
+    summ.round(4).to_csv(OUT / exp / "summary.csv", index=False)
+    show(summary=summ)
+
+
+def exp_3_6b():
+    """Rarer reward (SFT step 90) and a weaker checker (lenient reward)."""
+    exp = "3.6b"
+    c, r = load_many("3.6b", "3.1b", "3.1c", "3.2")
+    for d in (c, r):
+        d["ref_kl"] = d["ref_kl"].fillna(0.0)
+
+    def arm(row) -> str:
+        if row.objective == "filtered":
+            return "filtered imitation"
+        if row.objective == "self_diffusion":
+            return "self-training, SFT loss"
+        if row.objective == "wd1" and row.beta == 1.0 and row.ref_kl == 0 and row.tau == 1.0:
+            return "wd1, floor −12" if row.floor == -12 else ("wd1" if row.floor != row.floor else "")
+        return ""
+
+    c["arm"], r["arm"] = c.apply(arm, axis=1), r.apply(arm, axis=1)
+    c, r = c[(c.arm != "") & (c.seed <= 2)], r[(r.arm != "") & (r.seed <= 2)]
+    ref = (c.exp != "3.6b") & (c.reward == "binary") & (c.tag == "")        # strict reward, phase 2 start
+    styles = [("wd1", C[0], "-"), ("wd1, floor −12", C[0], ":"), ("filtered imitation", C[5], "-"),
+              ("self-training, SFT loss", C[4], "-")]
+    fig, axs = plt.subplots(1, 3, figsize=(14, 3.6))
+    for lab, col, ls in styles:
+        band(axs[0], c[(c.exp == "3.6b") & (c.tag == "_sft90") & (c.arm == lab)], "val_solve", col, lab, ls=ls)
+        band(axs[1], c[(c.exp == "3.6b") & (c.reward == "lenient") & (c.arm == lab)], "val_solve", col, lab, ls=ls)
+        band(axs[2], c[(c.exp == "3.6b") & (c.reward == "lenient") & (c.arm == lab) & (c.step > 0)], "mean_reward",
+             col, lab, ls=ls)
+    axs[0].set(title="Rarer reward: start at SFT step 90 (val 0.007)", xlabel="RL step",
+               ylabel="val solve rate (greedy, S=8)", ylim=(-0.02, 1.02))
+    axs[1].set(title="Weaker checker: true solve rate", xlabel="RL step", ylabel="val solve rate (true validity)",
+               ylim=(-0.02, 1.02))
+    axs[2].set(title="Weaker checker: the rewarded quantity", xlabel="RL step",
+               ylabel="share of rollouts with valid rows and columns", ylim=(-0.02, 1.02))
+    axs[0].legend(fontsize=7, loc="center right")
+    save(fig, exp, "rarer_reward_weaker_checker.png")
+    rows = []
+    for lab, _, _ in styles:
+        base = r[ref.reindex(r.index, fill_value=False) & (r.arm == lab)] if False else \
+            r[(r.exp != "3.6b") & (r.reward == "binary") & (r.tag == "") & (r.arm == lab)]
+        sparse = r[(r.exp == "3.6b") & (r.tag == "_sft90") & (r.arm == lab)]
+        len_ = r[(r.exp == "3.6b") & (r.reward == "lenient") & (r.arm == lab)]
+        late = c[(c.exp == "3.6b") & (c.reward == "lenient") & (c.arm == lab) & (c.step > 1250)].mean_reward.mean()
+        rows.append({"arm": lab, "strict_reward_from_step_120_test": base.final_test.mean(),
+                     "rarer_reward_test": sparse.final_test.mean(), "rarer_reward_test_std": sparse.final_test.std(),
+                     "rarer_reward_min_val": sparse.min_val.mean(),
+                     "weaker_checker_true_test": len_.final_test.mean(), "weaker_checker_true_test_std": len_.final_test.std(),
+                     "weaker_checker_rewarded_share_last_250": late, "weaker_checker_min_val": len_.min_val.mean()})
+    summ = pd.DataFrame(rows)
+    summ["gap_true_vs_strict"] = summ.strict_reward_from_step_120_test - summ.weaker_checker_true_test
+    summ.round(4).to_csv(OUT / exp / "summary.csv", index=False)
+    show(summary=summ)
+
+
 def method(row) -> str:
     if row.objective == "wd1":
         return dict(WD1_VS_POS)[row.beta]
@@ -675,7 +776,7 @@ def exp_3_2b():
     show(summary=summ)
 
 
-EXPERIMENTS: dict = {"3.3b": lambda: exp_3_3("3.3b"), "3.1g": exp_3_1g, "3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
+EXPERIMENTS: dict = {"3.6a": exp_3_6a, "3.6b": exp_3_6b, "3.3b": lambda: exp_3_3("3.3b"), "3.1g": exp_3_1g, "3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
                      "3.1d": exp_3_1d, "3.1e": exp_3_1e, "3.1f": exp_3_1f, "3.2": exp_3_2}
 
 
