@@ -6,12 +6,13 @@ Autoregressive LLMs write one token at a time, left to right. Masked dLLMs start
 
 This is **not** a research paper and makes no novelty claims. The goal is to learn by building, measure carefully, and report what works and what does not.
 
-## Two phases
+## Phases
 
 | Phase | What | Where it runs | Doc |
 |---|---|---|---|
 | 1 | Explore a real dLLM (LLaDA-8B-Instruct): visualise unmasking order, compare unmasking strategies and step budgets, check whether token confidence predicts errors | Inference only, MPS | [docs/PHASE1_LLADA_ON_MAC.md](docs/PHASE1_LLADA_ON_MAC.md) |
 | 2 | Train a tiny masked diffusion model from scratch on 4×4 Sudoku, then fine-tune it with RL using a hand-written implementation of the wd1 weighted policy objective; compare accuracy and confidence before/after RL | Training, MPS | [docs/PHASE2_TOY_SUDOKU_DLLM.md](docs/PHASE2_TOY_SUDOKU_DLLM.md) |
+| 3 (planned) | Use the toy model as an RL playground: take wd1 apart, compare it with simpler objectives, reward honest confidence, learn the unmasking order | Training, MPS | [docs/PHASE3_RL_PLAYGROUND.md](docs/PHASE3_RL_PLAYGROUND.md) |
 
 Overall plan, timeline and deliverables: [docs/PLAN.md](docs/PLAN.md). Reading list: [docs/REFERENCES.md](docs/REFERENCES.md).
 
