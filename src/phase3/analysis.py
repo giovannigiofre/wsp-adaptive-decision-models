@@ -526,9 +526,9 @@ def reliability(ax, conf: np.ndarray, solved: np.ndarray, color, label: str, bin
     ax.scatter(mc[ok], acc[ok], s=12 + 150 * cnt[ok] / cnt.sum(), color=color, zorder=4, edgecolor="white", lw=0.8)
 
 
-def exp_3_3():
-    """Confidence token with a Brier-shaped reward vs probe vs implicit confidence."""
-    exp = "3.3"
+def exp_3_3(exp: str = "3.3"):
+    """Confidence token with a Brier-shaped reward vs probe vs implicit confidence.
+    3.3b is the same analysis for the frozen-denoiser runs; the no-token baseline is always 3.3's."""
     rows = []
     for p in sorted((OUT / exp).glob("conf_*.json")):
         j = json.load(open(p))
@@ -543,9 +543,9 @@ def exp_3_3():
     summ.columns = [f"{a}_{b}" for a, b in summ.columns]
     summ = summ.reset_index()
     summ.round(4).to_csv(OUT / exp / "summary.csv", index=False)
-    base = pd.read_csv(OUT / exp / "baseline_implicit.csv")
+    base = pd.read_csv(OUT / "3.3" / "baseline_implicit.csv")
     fig, ax = plt.subplots(1, 3, figsize=(13, 3.6))
-    wd1 = [p for p in sorted((OUT / exp).glob("baseline_wd1_seed*_test.csv"))]
+    wd1 = [p for p in sorted((OUT / "3.3").glob("baseline_wd1_seed*_test.csv"))]
     if wd1:
         d = pd.concat([pd.read_csv(p) for p in wd1])
         s = d.solved.to_numpy()
@@ -556,7 +556,7 @@ def exp_3_3():
     buckets = [0.125, 0.375, 0.625, 0.875]
     for a, place in ((ax[1], "last"), (ax[2], "first")):
         for mode, col in (("rl", C[1]), ("probe", C[4])):
-            fs = sorted((OUT / exp).glob(f"conf_{mode}_{place}_seed*_test.csv"))
+            fs = sorted((OUT / exp).glob(f"conf_{mode}_{place}_*test.csv"))
             if fs:
                 d = pd.concat([pd.read_csv(p) for p in fs])
                 reliability(a, d.q_stated.to_numpy(), d.solved.to_numpy(), col,
@@ -566,7 +566,7 @@ def exp_3_3():
         a.plot([0, 1], [0, 1], color="0.5", ls=":", lw=1)
         a.set(xlabel="stated confidence", ylabel="share of puzzles solved (test, seeds pooled)", xlim=(-0.02, 1.02),
               ylim=(-0.02, 1.02))
-        a.legend(fontsize=8, loc="upper left")
+        a.legend(fontsize=8, loc="lower right")
     save(fig, exp, "calibration.png")
     show(token_arms=summ, implicit_baseline=base.drop(columns=[c for c in base.columns if c.endswith("_params")]))
 
@@ -675,7 +675,7 @@ def exp_3_2b():
     show(summary=summ)
 
 
-EXPERIMENTS: dict = {"3.1g": exp_3_1g, "3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
+EXPERIMENTS: dict = {"3.3b": lambda: exp_3_3("3.3b"), "3.1g": exp_3_1g, "3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
                      "3.1d": exp_3_1d, "3.1e": exp_3_1e, "3.1f": exp_3_1f, "3.2": exp_3_2}
 
 

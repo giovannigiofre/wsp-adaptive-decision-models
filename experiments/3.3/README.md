@@ -32,3 +32,38 @@ PYTHONPATH=src python -m phase3.analysis 3.3
 
 - Config: `configs/phase3.yaml` (`rl:` for the grid objective, `conf_token:`), seeds 0–2, standard horizon. The new query and head use lr 1e-3; the denoiser keeps 1e-5.
 - Code: `src/phase3/conf_token.py`. Tests: `tests/test_conf_token.py`.
+- Hardware: Apple M5 24 GB, macOS 27.0.1, Python 3.12.13, torch 2.15.0, MPS, fp32. Seeds 0–2, 1500 steps.
+- Wall-clock: about 13–15 min per run, three at a time (ran in the same launch as 3.1e).
+- Baseline command as run: the three wd1 checkpoints are `~/dllm-cache/phase3/3.1b/ckpt/wd1_beta1_tau1_seed{0,1,2}/final.pt`.
+- Results: `results/phase3/3.3/` (one CSV, JSON and `_test.csv` per run, `runs.csv`, `summary.csv`, `baseline_implicit.csv`, `baseline_*_test.csv`, `calibration.png`).
+
+## Outcome
+
+![calibration](../../results/phase3/3.3/calibration.png)
+
+Test set, mean ± std over 3 seeds. Lower Brier is better; always stating the base rate would score about 0.11.
+
+| Confidence | test solve rate | Brier | ECE | AUROC |
+|---|---|---|---|---|
+| implicit (commit confidence), raw, wd1 runs | 0.859 | 0.128 ± 0.018 | 0.121 | 0.919 |
+| implicit, recalibrated with 1 parameter | 0.859 | 0.109 ± 0.014 | 0.109 | 0.919 |
+| implicit, recalibrated with 2 parameters | 0.859 | 0.067 ± 0.005 | 0.020 | 0.919 |
+| token from the completed grid, RL with Brier reward | 0.867 | 0.296 ± 0.106 | 0.408 | 0.516 |
+| token from the completed grid, probe | 0.882 | 0.279 ± 0.127 | 0.479 | 0.934 |
+| token from the puzzle alone, RL with Brier reward | 0.874 | 0.359 ± 0.003 | 0.499 | 0.446 |
+| token from the puzzle alone, probe | 0.880 | 0.171 ± 0.003 | 0.255 | 0.560 |
+
+Prediction check:
+- **rl, last "AUROC at least 0.90 and Brier below the raw implicit confidence": wrong.** AUROC 0.52 and Brier 0.30. In two of three seeds the token always states 0.375, in the third always 0.625. Solve rate is unaffected, as predicted (0.867 against 0.859).
+- **rl, first "AUROC 0.60–0.75, Brier near the base rate": wrong.** It always states 0.375 (Brier 0.36).
+- **"probe is at least as good as rl": right, but the probe is not good either.** From the completed grid it ranks solved above unsolved well (AUROC 0.93), but its values are far too low: it says 0.125 for failures and only 0.375 or 0.625 for successes.
+- **"Recalibration improves the implicit Brier and leaves AUROC unchanged": right** (0.128 → 0.067 with two parameters). **"The `last` token beats it on both": wrong.** A two-parameter recalibration of the confidence the model already has is the best row in the table by a wide margin.
+
+What went wrong, from the training logs:
+- The target moved. The share of valid rollouts rose from about 0.3 to 0.9 during training, since the grid was being trained at the same time. Early on the best single statement is "0.375", and that is what the token learned.
+- In RL mode the token then stopped exploring. Once it states 0.375 every time, no other value is ever sampled, so nothing tells it that 0.875 would now score better. This is the usual failure of a policy gradient that has become deterministic.
+- The probe has no sampling, but its softmax saturated in the same place and moved slowly: in the one seed that reached 0.625 the jump happened after step 1000.
+- The RL signal for the token was weak by construction: wd1 at τ = 1 gives almost flat weights (3.1b), and the token's choice changes the reward by at most 0.77.
+
+**Shows:** trained jointly with the grid, with wd1 at τ = 1, a stated-confidence token does not become calibrated in 1500 steps, and a 2-parameter recalibration of the existing commit confidence is much better. The over-confidence found in phase 2 is real (0.98 stated against 0.86 solved) and cheap to remove after the fact.
+**Does not show:** that a Brier-shaped reward cannot work. Two design choices made here stack the deck against it, the moving target and the flat weights. 3.3b removes both.

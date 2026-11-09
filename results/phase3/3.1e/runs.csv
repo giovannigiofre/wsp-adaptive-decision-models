@@ -1,0 +1,13 @@
+run,objective,tau,beta,floor,reward,ref_mix,ref_kl,tag,seed,steps,lr,init,final_val,final_test,final_val_s1,final_test_s1,best_val,best_step,best_test,min_val,min_val_step,first_step_val_0.7,wall_clock_s,torch,device,code_commit
+wd1_beta0_tau0.25_graded_seed0,wd1,0.25,0,,graded,0.0,0.0,,0,1500,0.0,sft_weak.pt,0.0,0.0,0.0,0.0,0.4197,0,0.4824,0.0,75,-1,552.2,2.15.0,mps,e4f53ef
+wd1_beta0_tau0.25_graded_seed1,wd1,0.25,0,,graded,0.0,0.0,,1,1500,0.0,sft_weak.pt,0.0,0.0,0.0,0.0,0.4197,0,0.4824,0.0,75,-1,533.9,2.15.0,mps,e4f53ef
+wd1_beta0_tau0.25_graded_seed2,wd1,0.25,0,,graded,0.0,0.0,,2,1500,0.0,sft_weak.pt,0.0,0.0,0.0,0.0,0.4197,0,0.4824,0.0,75,-1,562.8,2.15.0,mps,e4f53ef
+wd1_beta0_tau1_graded_seed0,wd1,1.0,0,,graded,0.0,0.0,,0,1500,0.0,sft_weak.pt,0.0,0.0,0.0,0.0,0.4197,0,0.4824,0.0,50,-1,579.2,2.15.0,mps,e4f53ef
+wd1_beta0_tau1_graded_seed1,wd1,1.0,0,,graded,0.0,0.0,,1,1500,0.0,sft_weak.pt,0.0,0.0,0.0,0.0,0.4197,0,0.4824,0.0,50,-1,537.1,2.15.0,mps,e4f53ef
+wd1_beta0_tau1_graded_seed2,wd1,1.0,0,,graded,0.0,0.0,,2,1500,0.0,sft_weak.pt,0.0,0.0,0.0,0.0,0.4197,0,0.4824,0.0,50,-1,558.9,2.15.0,mps,e4f53ef
+wd1_beta1_tau0.25_graded_seed0,wd1,0.25,1,,graded,0.0,0.0,,0,1500,0.0,sft_weak.pt,0.8787,0.8526,0.1148,0.0846,0.8951,1475,0.8543,0.4197,0,275,573.1,2.15.0,mps,e4f53ef
+wd1_beta1_tau0.25_graded_seed1,wd1,0.25,1,,graded,0.0,0.0,,1,1500,0.0,sft_weak.pt,0.8754,0.876,0.1115,0.0921,0.8885,1375,0.8727,0.4197,0,450,520.8,2.15.0,mps,e4f53ef
+wd1_beta1_tau0.25_graded_seed2,wd1,0.25,1,,graded,0.0,0.0,,2,1500,0.0,sft_weak.pt,0.8754,0.861,0.118,0.0829,0.8852,1350,0.8434,0.4197,0,475,553.5,2.15.0,mps,e4f53ef
+wd1_beta1_tau1_graded_seed0,wd1,1.0,1,,graded,0.0,0.0,,0,1500,0.0,sft_weak.pt,0.859,0.8526,0.0951,0.0863,0.9115,1275,0.8442,0.4197,0,475,573.7,2.15.0,mps,e4f53ef
+wd1_beta1_tau1_graded_seed1,wd1,1.0,1,,graded,0.0,0.0,,1,1500,0.0,sft_weak.pt,0.8689,0.8492,0.1115,0.0913,0.8918,1475,0.8509,0.4197,0,500,535.9,2.15.0,mps,e4f53ef
+wd1_beta1_tau1_graded_seed2,wd1,1.0,1,,graded,0.0,0.0,,2,1500,0.0,sft_weak.pt,0.859,0.8417,0.1049,0.093,0.8951,1475,0.8467,0.4197,0,550,519.5,2.15.0,mps,e4f53ef

@@ -1,0 +1,66 @@
+{
+  "name": "conf_probe_last_seed2",
+  "mode": "probe",
+  "place": "last",
+  "seed": 2,
+  "steps": 1500,
+  "objective": "wd1",
+  "objective_params": {
+    "tau": 1.0,
+    "beta": 1.0,
+    "floor": null
+  },
+  "lr": 1e-05,
+  "head_lr": 0.001,
+  "buckets": [
+    0.125,
+    0.375,
+    0.625,
+    0.875
+  ],
+  "init": "/Users/giovannigiofre/dllm-cache/phase2/sft/sft_weak.pt",
+  "init_sha256": "f47107867c03ea10be837dfbd137e6f95fdb7fa7c907b1b1a0f75f4f897bb497",
+  "overrides": [
+    "rl.max_rl_steps=1500"
+  ],
+  "code_commit": "e4f53ef",
+  "val": {
+    "solve": 0.9049180150032043,
+    "implicit_brier": 0.08631782978773117,
+    "implicit_ece": 0.07726607811255533,
+    "implicit_auroc": 0.9195402298850575,
+    "implicit_mean": 0.982184112071991,
+    "q_expected_brier": 0.3593614995479584,
+    "q_expected_ece": 0.5596969205825055,
+    "q_expected_auroc": 0.8715642178910544,
+    "q_expected_mean": 0.36012542247772217,
+    "q_stated_brier": 0.3594774603843689,
+    "q_stated_ece": 0.5594262398657252,
+    "q_stated_auroc": 0.8103448275862069,
+    "q_stated_mean": 0.3602459132671356
+  },
+  "test": {
+    "solve": 0.8911222815513611,
+    "implicit_brier": 0.09890806674957275,
+    "implicit_ece": 0.09040808133543835,
+    "implicit_auroc": 0.9253108733371891,
+    "implicit_mean": 0.9815303683280945,
+    "q_expected_brier": 0.3551628887653351,
+    "q_expected_ece": 0.5498214662948645,
+    "q_expected_auroc": 0.8743276460381724,
+    "q_expected_mean": 0.3587101697921753,
+    "q_stated_brier": 0.355135053396225,
+    "q_stated_ece": 0.5492043748772524,
+    "q_stated_auroc": 0.8038461538461539,
+    "q_stated_mean": 0.3584589660167694
+  },
+  "wall_clock_s": 921.1392769813538,
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "mps",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 4
+  }
+}

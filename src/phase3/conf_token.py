@@ -17,6 +17,9 @@ underlying denoiser and any change in solve rate comes from training, not from t
                  expected Brier loss sum_k p_k (q_k - r)^2 directly. Its gradient is the exact expectation
                  of the policy gradient of the Brier reward, so this is the no-sampling-noise reference.
 
+  --freeze       the denoiser is frozen and only the query and head are trained (3.3b): the grid policy
+                 and its solve rate cannot change, so the target of the confidence is stationary.
+
 PYTHONPATH=src python -m phase3.conf_token train --mode rl --place last --seed 0
 PYTHONPATH=src python -m phase3.conf_token baseline --ckpt weak=~/dllm-cache/phase2/sft/sft_weak.pt
 """
@@ -120,7 +123,7 @@ def train_cmd(a):
     params = objective_params(rc)
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
     dev = get_device(a.device or base["runtime"]["device"])
-    name = f"conf_{a.mode}_{a.place}_seed{a.seed}{a.tag}"
+    name = f"conf_{a.mode}_{a.place}{'_frozen' if a.freeze else ''}_seed{a.seed}{a.tag}"
     out, ck = OUT / a.exp, CACHE / a.exp / "ckpt"
     out.mkdir(parents=True, exist_ok=True)
     ck.mkdir(parents=True, exist_ok=True)
@@ -136,8 +139,13 @@ def train_cmd(a):
     seed_all(a.seed)
     conf = ConfHead(model, len(cc["buckets"])).to(dev)
     buckets = torch.tensor(cc["buckets"], device=dev)
-    opt = torch.optim.AdamW([{"params": model.parameters(), "lr": rc["lr"]},
-                             {"params": conf.new_parameters(), "lr": cc["head_lr"]}], weight_decay=0.0)
+    if a.freeze:
+        for p in model.parameters():
+            p.requires_grad_(False)
+        opt = torch.optim.AdamW(conf.new_parameters(), lr=cc["head_lr"], weight_decay=0.0)
+    else:
+        opt = torch.optim.AdamW([{"params": model.parameters(), "lr": rc["lr"]},
+                                 {"params": conf.new_parameters(), "lr": cc["head_lr"]}], weight_decay=0.0)
     fields = ["step", "mean_valid", "mean_q", "mean_reward", "frac_skipped", "loss", "val_solve",
               "val_q_expected_brier", "val_q_expected_ece", "val_q_expected_auroc", "val_implicit_brier",
               "elapsed_s"]
@@ -173,11 +181,14 @@ def train_cmd(a):
         losses = []
         for _ in range(rc["inner_steps"]):
             loss = torch.zeros((), device=dev)
-            if keep.any():
-                logp, given = one_step_logprobs(model, P[sel], O[sel], rc["prompt_mask_prob"])
-                lp = loglik(logp, O[sel], given)
-                if a.mode == "rl":
-                    lp = lp + conf(ctx[sel]).log_softmax(-1).gather(1, k[sel, None]).squeeze(1)
+            if keep.any() and not (a.freeze and a.mode == "probe"):
+                if a.freeze:      # only the confidence token's log-prob carries gradient
+                    lp = conf(ctx[sel]).log_softmax(-1).gather(1, k[sel, None]).squeeze(1)
+                else:
+                    logp, given = one_step_logprobs(model, P[sel], O[sel], rc["prompt_mask_prob"])
+                    lp = loglik(logp, O[sel], given)
+                    if a.mode == "rl":
+                        lp = lp + conf(ctx[sel]).log_softmax(-1).gather(1, k[sel, None]).squeeze(1)
                 loss = loss + weighted_loss(lp.view(-1, G), gw)
             if a.mode == "probe":
                 loss = loss + cc["probe_weight"] * expected_brier(conf(ctx), r, buckets)
@@ -202,7 +213,7 @@ def train_cmd(a):
     mv, _ = evaluate(model, conf, val, S, a.place, buckets)
     mt, arr = evaluate(model, conf, test, S, a.place, buckets)
     pd.DataFrame(arr).round(4).to_csv(out / f"{name}_test.csv", index=False)
-    summ = {"name": name, "mode": a.mode, "place": a.place, "seed": a.seed, "steps": steps,
+    summ = {"name": name, "mode": a.mode, "place": a.place, "frozen": a.freeze, "seed": a.seed, "steps": steps,
             "objective": rc["objective"], "objective_params": params, "lr": rc["lr"], "head_lr": cc["head_lr"],
             "buckets": cc["buckets"], "init": str(init), "init_sha256": sha256(init), "overrides": a.set,
             "code_commit": git_commit(), "val": mv, "test": mt, "wall_clock_s": time.time() - t0,
@@ -273,6 +284,7 @@ def main():
     ap.add_argument("--exp", default="3.3")
     ap.add_argument("--mode", choices=["rl", "probe"], default="rl")
     ap.add_argument("--place", choices=["last", "first"], default="last")
+    ap.add_argument("--freeze", action="store_true", help="freeze the denoiser, train only the query and head")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--init", default=None)
     ap.add_argument("--ckpt", nargs="*", default=[], help="baseline: label=path pairs")
