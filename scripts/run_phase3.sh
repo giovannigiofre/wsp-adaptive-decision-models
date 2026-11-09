@@ -36,6 +36,14 @@ main() {
               echo "$rl --seed $s --set $hs rl.reward=graded $op.tau=$t $op.beta=$b"; done; done; done ;;
       3.1f) for s in 0 1 2; do for m in 0.04 0.2 0.5; do                      # no reference is in 3.1b
               echo "$rl --seed $s --set $hs rl.ref_mix=$m"; done; done ;;
+      3.1g) for s in 0 1 2; do
+              for st in "--init $SFT/step_000100.pt --tag _sft100" \
+                        "--init $SUB/$(cat results/phase3/3.1d/chosen_subset.txt).pt --tag _subset"; do
+                echo "$rl --seed $s $st --set $hs rl.objective=filtered"
+                echo "$rl --seed $s $st --set $hs rl.objective=self_diffusion"
+                echo "$rl --seed $s $st --set $hs rl.ref_kl=0.01"
+                echo "$rl --seed $s $st --set $hs $op.floor=-12"
+              done; done ;;
       3.2)  for s in 3 4; do                                  # wd1 and positive-only, seeds 0-2, are in 3.1b
               echo "$rl --seed $s --set $hs"
               echo "$rl --seed $s --set $hs $op.beta=0"; done
@@ -64,7 +72,7 @@ main() {
   }
 
   runs | xargs -P "${JOBS:-3}" -L 1 "$PY"
-  case "$EXP" in 3.1[a-f]|3.2|3.2b) "$PY" -m phase3.analysis compact "$EXP" ;; esac
+  case "$EXP" in 3.1[a-g]|3.2|3.2b) "$PY" -m phase3.analysis compact "$EXP" ;; esac
 }
 
 main "$@"

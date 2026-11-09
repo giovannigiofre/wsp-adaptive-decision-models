@@ -421,6 +421,49 @@ def exp_3_1f():
     show(summary=summ)
 
 
+def exp_3_1g():
+    """Do the better variants survive other starts? (wd1 and positive-only from the same starts: 3.1d)"""
+    exp = "3.1g"
+    c, r = load_many("3.1g", "3.1d")
+    for d in (c, r):
+        d["ref_kl"] = d["ref_kl"].fillna(0.0)
+
+    def arm(row) -> str:
+        if row.objective == "filtered":
+            return "filtered imitation"
+        if row.objective == "self_diffusion":
+            return "self-training, SFT loss"
+        if row.ref_kl > 0:
+            return "wd1 + KL 0.01"
+        if row.floor == row.floor:      # not NaN
+            return "wd1, floor −12"
+        return dict(WD1_VS_POS)[row.beta]
+
+    c["arm"], r["arm"] = c.apply(arm, axis=1), r.apply(arm, axis=1)
+    n = (OUT / "3.1d" / "chosen_subset.txt").read_text().strip().split("_n")[1].split("_")[0]
+    styles = [("wd1 (τ=1)", C[0], "-"), ("wd1 + KL 0.01", C[0], "--"), ("wd1, floor −12", C[0], ":"),
+              ("positive-only (w⁻=0)", C[1], "-"), ("filtered imitation", C[5], "-"),
+              ("self-training, SFT loss", C[4], "-")]
+    fig, axs = plt.subplots(1, 2, figsize=(11, 3.6), sharey=True)
+    for ax, (tag, title) in zip(axs, (("_sft100", "Start: SFT step 100 (val 0.11)"),
+                                      ("_subset", f"Start: converged on {n} solutions (val 0.65)"))):
+        for lab, col, ls in styles:
+            band(ax, c[(c.tag == tag) & (c.arm == lab)], "val_solve", col, lab, ls=ls)
+        ax.set(title=title, xlabel="RL step", ylim=(-0.02, 1.02))
+    axs[0].set_ylabel("val solve rate (greedy, S=8)")
+    axs[0].legend(fontsize=7, loc="center right")
+    save(fig, exp, "other_starts.png")
+    r["start"] = r.tag.map({"_sft100": "SFT step 100", "_subset": f"converged on {n} solutions"})
+    g = r.groupby(["start", "arm"])
+    summ = g.agg(n=("seed", "count"), final_test_mean=("final_test", "mean"), final_test_std=("final_test", "std"),
+                 best_val_mean=("best_val", "mean"), best_test_mean=("best_test", "mean"),
+                 final_val_mean=("final_val", "mean"), min_val_mean=("min_val", "mean")).reset_index()
+    summ["max_drop_from_best_val"] = g.apply(lambda d: (d.best_val - d.final_val).max()).values
+    summ = summ.sort_values(["start", "final_test_mean"], ascending=[True, False])
+    summ.round(4).to_csv(OUT / exp / "summary.csv", index=False)
+    show(summary=summ)
+
+
 def method(row) -> str:
     if row.objective == "wd1":
         return dict(WD1_VS_POS)[row.beta]
@@ -632,7 +675,7 @@ def exp_3_2b():
     show(summary=summ)
 
 
-EXPERIMENTS: dict = {"3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
+EXPERIMENTS: dict = {"3.1g": exp_3_1g, "3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
                      "3.1d": exp_3_1d, "3.1e": exp_3_1e, "3.1f": exp_3_1f, "3.2": exp_3_2}
 
 
