@@ -1,0 +1,13 @@
+start,arm,n,final_test_mean,final_test_std,best_val_mean,best_test_mean,final_val_mean,min_val_mean,max_drop_from_best_val
+SFT step 100,"self-training, SFT loss",3,0.9992,0.0014,1.0,0.995,1.0,0.0262,0.0
+SFT step 100,filtered imitation,3,0.9958,0.0008,1.0,0.9908,0.9956,0.0066,0.0131
+SFT step 100,"wd1, floor −12",3,0.9894,0.0027,0.9945,0.988,0.9913,0.1082,0.0065
+SFT step 100,wd1 + KL 0.01,3,0.9816,0.0017,0.9781,0.9796,0.9683,0.1148,0.0131
+SFT step 100,wd1 (τ=1),3,0.8789,0.0039,0.8995,0.8738,0.8973,0.1148,0.0066
+SFT step 100,positive-only (w⁻=0),3,0.0,0.0,0.1148,0.1516,0.0,0.0,0.1148
+converged on 10 solutions,"self-training, SFT loss",3,1.0,0.0,1.0,0.9947,1.0,0.6492,0.0
+converged on 10 solutions,"wd1, floor −12",3,0.89,0.0199,0.9278,0.8791,0.9268,0.6492,0.0032
+converged on 10 solutions,filtered imitation,3,0.8881,0.0109,0.9323,0.878,0.9323,0.6492,0.0
+converged on 10 solutions,wd1 (τ=1),3,0.7914,0.0111,0.8699,0.7881,0.8667,0.6492,0.0065
+converged on 10 solutions,wd1 + KL 0.01,3,0.7284,0.0059,0.8055,0.7256,0.7956,0.6492,0.0164
+converged on 10 solutions,positive-only (w⁻=0),3,0.4796,0.1002,0.9432,0.9129,0.4536,0.3093,0.6229
