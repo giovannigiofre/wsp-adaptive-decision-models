@@ -26,3 +26,17 @@ PYTHONPATH=src python -m phase3.analysis 3.4b
 
 - Config: `configs/phase3.yaml` (`order_policy:`). Learning rate chosen on val in a one-seed pilot (see Outcome).
 - Code: `src/phase3/order_policy.py`. Tests: `tests/test_order_policy.py`.
+
+## Transfer check (added after the training runs, before running it)
+
+Apply the trained policies (best-val checkpoints, no further training) to denoisers they were not trained on: the earlier and later SFT snapshots (steps 100 and 130) and the three wd1-tuned denoisers from 3.1b. For each denoiser also report the confidence rule and the oracle.
+
+**Prediction:** the `probs` policy transfers, since it has learned the confidence rule. The `hidden` policies do not: on a denoiser whose hidden states have moved (the RL-tuned ones most of all) they are at or below the confidence rule.
+
+```
+PYTHONPATH=src python -m phase3.order_policy transfer --denoisers sft100=~/dllm-cache/phase2/sft/step_000100.pt \
+  sft120=~/dllm-cache/phase2/sft/sft_weak.pt sft130=~/dllm-cache/phase2/sft/step_000130.pt \
+  wd1_seed0=~/dllm-cache/phase3/3.1b/ckpt/wd1_beta1_tau1_seed0/final.pt \
+  wd1_seed1=~/dllm-cache/phase3/3.1b/ckpt/wd1_beta1_tau1_seed1/final.pt \
+  wd1_seed2=~/dllm-cache/phase3/3.1b/ckpt/wd1_beta1_tau1_seed2/final.pt
+```

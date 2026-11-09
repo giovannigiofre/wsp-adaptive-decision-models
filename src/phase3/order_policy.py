@@ -238,6 +238,39 @@ def train_cmd(a):
     print(json.dumps(summ), flush=True)
 
 
+def transfer_cmd(a):
+    """Apply the policies trained on the weak denoiser (best-val checkpoints) to other denoisers,
+    next to the confidence rule and the oracle on the same denoiser. No training."""
+    cfg = load_cfg(a.config)
+    base = load_cfg(cfg["base_config"])
+    oc = cfg["order_policy"]
+    dev = get_device(a.device or base["runtime"]["device"])
+    test = build_datasets(base, base["data"].get("split_seed", 0))["test"].to(dev)
+    rows = []
+    for spec in a.denoisers:
+        label, path = spec.split("=", 1)
+        model = load_denoiser(base, Path(path).expanduser(), dev)
+        for h in ("confidence", "random"):
+            rows.append({"denoiser": label, "order": f"{h} rule", "seed": -1,
+                         "test_solve": run_sampler(model, test, 16, h)["solved"].float().mean().item()})
+        rows.append({"denoiser": label, "order": "oracle", "seed": -1,
+                     "test_solve": oracle_order(model, test)["solved"].float().mean().item()})
+        for feats, init in (("probs", "zero"), ("hidden", "zero"), ("hidden", "confidence")):
+            for ck in sorted((CACHE / "3.4b" / "ckpt").glob(f"reinforce_{feats}_{init}_lr*_seed*_best.pt")):
+                policy = OrderPolicy(feats, base["model"]["d_model"], oc["width"], init, oc["conf_scale"]).to(dev)
+                policy.load_state_dict(torch.load(ck, map_location=dev))
+                solve, agree = evaluate(model, policy, test)
+                rows.append({"denoiser": label, "order": f"policy {feats}, {init} start",
+                             "seed": int(ck.stem.split("_seed")[1].split("_")[0]), "test_solve": solve,
+                             "agree_conf": agree})
+    df = pd.DataFrame(rows).round(4)
+    df.to_csv(OUT / "3.4b" / "transfer.csv", index=False)
+    summ = df.groupby(["denoiser", "order"], sort=False).agg(n=("seed", "count"), test_solve_mean=("test_solve", "mean"),
+                                                            test_solve_std=("test_solve", "std")).reset_index()
+    summ.round(4).to_csv(OUT / "3.4b" / "transfer_summary.csv", index=False)
+    print(summ.round(3).to_string(index=False))
+
+
 def oracle_cmd(a):
     cfg = load_cfg(a.config)
     base = load_cfg(cfg["base_config"])
@@ -276,7 +309,8 @@ def oracle_cmd(a):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=["oracle", "train"])
+    ap.add_argument("what", choices=["oracle", "train", "transfer"])
+    ap.add_argument("--denoisers", nargs="*", default=[], help="transfer: label=path pairs")
     ap.add_argument("--config", default="configs/phase3.yaml")
     ap.add_argument("--device", default=None)
     ap.add_argument("--exp", default="3.4b")
@@ -290,7 +324,7 @@ def main():
     ap.add_argument("--tag", default="")
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
-    {"oracle": oracle_cmd, "train": train_cmd}[a.what](a)
+    {"oracle": oracle_cmd, "train": train_cmd, "transfer": transfer_cmd}[a.what](a)
 
 
 if __name__ == "__main__":

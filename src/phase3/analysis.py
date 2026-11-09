@@ -561,7 +561,7 @@ def exp_3_4b():
                        fontsize=7, color="0.3")
     ax[0].set(xlabel="training step", ylabel="val solve rate (greedy order, one cell per step)", ylim=(-0.02, 1.04),
               title="Learning the order on the frozen weak denoiser")
-    ax[0].legend(fontsize=7, loc="center right")
+    ax[0].legend(fontsize=7, loc="lower right", bbox_to_anchor=(1.0, 0.16))
     runs["variant"] = [labels[(m, f, i)][0] for m, f, i in zip(runs.method, runs.features, runs.init)]
     order = runs.groupby("variant").final_test.mean().sort_values().index.tolist()
     colour = {lab: col for lab, col in labels.values()}
