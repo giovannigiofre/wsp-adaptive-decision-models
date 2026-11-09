@@ -1,0 +1,23 @@
+{
+  "name": "wd1_tau1_seed2",
+  "variant": "wd1",
+  "tau": 1.0,
+  "seed": 2,
+  "lr": 1e-05,
+  "steps": 500,
+  "init": "/Users/giovannigiofre/dllm-cache/phase2/sft/sft_weak.pt",
+  "best_val": 0.7344262003898621,
+  "best_step": 500,
+  "final_val": 0.7344262003898621,
+  "final_test": 0.7437185645103455,
+  "wall_clock_s_this_session": 66.73368811607361,
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "mps",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 4
+  },
+  "best_test": 0.7437185645103455
+}

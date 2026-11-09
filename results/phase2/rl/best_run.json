@@ -1,0 +1,6 @@
+{
+  "name": "wd1_tau1_seed0",
+  "best_val": 0.7442622780799866,
+  "best_step": 500,
+  "rule": "wd1 tau=1 run with the highest val solve rate; its best-val checkpoint"
+}

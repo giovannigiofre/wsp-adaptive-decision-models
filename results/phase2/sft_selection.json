@@ -1,0 +1,21 @@
+{
+  "weak_step": 120,
+  "weak_val_solve": 0.4196721315383911,
+  "rule": "val solve rate in [0.3, 0.6], closest to midpoint 0.44999999999999996",
+  "full_step": 20000,
+  "full_val_solve": 1.0,
+  "eval_sampler": "confidence, S=8, greedy",
+  "n_params": 798212,
+  "wall_clock_s": 778.5065770149231,
+  "overrides": [],
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "mps",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 4
+  },
+  "seed": 0,
+  "ckpt_dir": "/Users/giovannigiofre/dllm-cache/phase2/sft"
+}

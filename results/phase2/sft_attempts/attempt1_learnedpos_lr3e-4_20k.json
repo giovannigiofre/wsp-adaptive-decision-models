@@ -1,0 +1,20 @@
+{
+  "weak_step": 10000,
+  "weak_val_solve": 0.14098361134529114,
+  "rule": "no checkpoint in [0.3, 0.6]; took the one closest to 0.44999999999999996",
+  "full_step": 20000,
+  "full_val_solve": 0.13770492374897003,
+  "eval_sampler": "confidence, S=8, greedy",
+  "n_params": 796676,
+  "wall_clock_s": 518.2527859210968,
+  "env": {
+    "python": "3.12.13",
+    "torch": "2.15.0",
+    "device": "mps",
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "torch_threads": 4
+  },
+  "seed": 0,
+  "ckpt_dir": "/Users/giovannigiofre/dllm-cache/phase2/sft"
+}

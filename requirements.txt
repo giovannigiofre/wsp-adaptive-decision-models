@@ -1,5 +1,20 @@
+torch>=2.4
+transformers==4.38.2  # required by LLaDA README (model code uses trust_remote_code)
+accelerate
+datasets
+huggingface_hub
 numpy
 pandas
 pyyaml
 psutil
+matplotlib
+imageio
+scikit-learn
+scipy  # Spearman rho in the phase-1 notebook
+tqdm
 pytest
+Pillow
+nbformat
+nbconvert
+ipykernel
+jupyter  # for notebooks/

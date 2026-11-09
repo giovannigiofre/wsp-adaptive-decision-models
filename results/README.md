@@ -1,1 +1,1 @@
-Commit compact summaries linked to experiment IDs and configs. Do not commit private data, large logs, weights, or unreviewed generated artifacts.
+Compact outputs only: CSV summaries, small PNG/GIF figures, per-phase `SUMMARY.md`, and the final `REPORT.md`. No weights, no large logs.

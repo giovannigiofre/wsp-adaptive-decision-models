@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.pt
+*.safetensors
+*.bin
+checkpoints/*
+!checkpoints/README.md
+runs/
+logs/
+wandb/
+.ipynb_checkpoints/
