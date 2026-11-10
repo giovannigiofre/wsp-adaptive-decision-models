@@ -1,4 +1,4 @@
-# 4.3 Choosing the RL start (measurements; choice proposed, not yet confirmed)
+# 4.3 Choosing the RL start (hard band, 4 sampler steps; confirmed by the user on 2026-11-10)
 
 **Goal:** apply the rule fixed in the spec to pick where RL starts, and measure there the two quantities that decided things in phase 3: the share of sampled rollouts that are valid and the share of groups of 8 with unequal rewards.
 
