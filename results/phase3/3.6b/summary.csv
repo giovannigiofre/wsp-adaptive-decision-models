@@ -1,0 +1,5 @@
+arm,strict_reward_from_step_120_test,rarer_reward_test,rarer_reward_test_std,rarer_reward_min_val,weaker_checker_true_test,weaker_checker_true_test_std,weaker_checker_rewarded_share_last_250,weaker_checker_min_val,gap_true_vs_strict
+wd1,0.8596,0.8361,0.009,0.0055,0.8825,0.0038,0.9035,0.4197,-0.0229
+"wd1, floor −12",0.9908,0.9869,0.0041,0.0055,0.9888,0.0021,0.9828,0.4197,0.0019
+filtered imitation,0.9978,0.0,0.0,0.0,0.9964,0.0013,0.9918,0.4197,0.0014
+"self-training, SFT loss",0.9989,0.0005,0.0005,0.0,0.9989,0.0005,0.9983,0.4197,0.0
