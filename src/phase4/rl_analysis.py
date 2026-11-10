@@ -299,15 +299,64 @@ def factorial(exp: str, config: str, ref_exp: str = "4.4", steps: int = 500):
     print(summ.round(3).T.to_string()); print(paired.round(3).to_string(index=False))
 
 
+def arms(exp: str, config: str, refs=("4.4", "4.5a"), pairs=()):
+    """Generic table for experiments whose arms `method()` does not know (4.6c, 4.6d). An arm is a run name
+    without its seed. Per arm and number of sampler steps: hard-band test solve rate (mean over seeds) and its
+    paired difference from the start model, 95% bootstrap over puzzles. `pairs` = "a:b" arm names; arms of the
+    reference experiments are read from their committed test_solved.csv."""
+    import re
+    rl, _ = _cfg(config)
+    band, out = rl["band"], OUT / exp
+    pp, where, start = {}, {}, {}
+    for e in (exp, *refs):
+        t = pd.read_csv(OUT / e / "test_solved.csv")
+        h = t[t.band == band]
+        for col in h.columns[2:]:
+            run, S = col.rsplit("|", 1)
+            if run == "start":
+                assert int(S) not in start or (start[int(S)] == h[col].to_numpy()).all(), f"start differs in {e} at {S}"
+                start[int(S)] = h[col].to_numpy()
+                continue
+            arm = re.sub(r"_seed\d+", "", run)
+            pp.setdefault((arm, int(S)), []).append(h[col].to_numpy()); where[arm] = e
+    pp = {k: np.mean(v, axis=0) for k, v in pp.items() if True}
+    n = {}
+    for e in (exp, *refs):
+        for col in pd.read_csv(OUT / e / "test_solved.csv", nrows=0).columns[2:]:
+            a = re.sub(r"_seed\d+", "", col.rsplit("|", 1)[0]); n.setdefault(a, set()).add(col.rsplit("|", 1)[0])
+    rows = []
+    for (arm, S), v in sorted(pp.items(), key=lambda kv: (where[kv[0][0]] != exp, kv[0][0], kv[0][1])):
+        mean, lo, hi = _fmt_ci(v - start[S])
+        rows.append({"exp": where[arm], "arm": arm, "seeds": len(n[arm]), "sampler_steps": S, "start": start[S].mean(),
+                     "test": v.mean(), "minus_start": mean, "lo": lo, "hi": hi})
+    summ = pd.DataFrame(rows)
+    summ.round(4).to_csv(out / "arms.csv", index=False)
+    prow = []
+    for pair in pairs:
+        a, b = pair.split(":")
+        for S in sorted({S for (m, S) in pp if m == a} & {S for (m, S) in pp if m == b}):
+            mean, lo, hi = _fmt_ci(pp[(a, S)] - pp[(b, S)])
+            prow.append({"a": a, "b": b, "sampler_steps": S, "a_minus_b": mean, "lo": lo, "hi": hi})
+    pd.set_option("display.width", 250); pd.set_option("display.max_columns", 50); pd.set_option("display.max_colwidth", 60)
+    print(summ.round(3).to_string(index=False))
+    if prow:
+        pd.DataFrame(prow).round(4).to_csv(out / "arm_pairs.csv", index=False)
+        print(pd.DataFrame(prow).round(3).to_string(index=False))
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=["compact", "evaluate", "report", "factorial"])
+    ap.add_argument("what", choices=["compact", "evaluate", "report", "factorial", "arms"])
     ap.add_argument("exp")
     ap.add_argument("--config", default="configs/phase4_rl.yaml")
     ap.add_argument("--budgets", type=int, nargs="*", default=None, help="evaluate: sampler steps (default 4 16)")
+    ap.add_argument("--refs", nargs="*", default=["4.4", "4.5a"], help="arms: experiments to read reference arms from")
+    ap.add_argument("--pairs", nargs="*", default=[], help="arms: a:b arm names to compare")
     a = ap.parse_args()
     if a.what == "evaluate" and a.budgets:
         return evaluate(a.exp, a.config, tuple(a.budgets))
+    if a.what == "arms":
+        return arms(a.exp, a.config, tuple(a.refs), a.pairs)
     {"compact": compact, "evaluate": evaluate, "report": report, "factorial": factorial}[a.what](a.exp, a.config)
 
 
