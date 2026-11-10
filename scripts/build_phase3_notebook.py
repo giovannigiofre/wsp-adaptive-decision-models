@@ -132,6 +132,27 @@ A small head scores every masked cell; training is REINFORCE on the validity rew
 **Shows:** from the three heuristic scores RL rediscovers the confidence rule in about 50 steps. With the denoiser's hidden state it finds an order 11 points better, about a quarter of the way to the oracle. That policy does not transfer to other denoisers.
 **Does not show:** that the rest of the gap can be learned; a head trained *with* the solutions does no better.
 """,
+    "s36": """
+## 3.6 Robustness checks added after the summary
+
+Three checks on the conclusions above. Each has a prediction committed before its runs; most of those predictions were wrong.
+""",
+    "s36a": """
+## 3.6a and 3.6c Does the likelihood estimate matter?
+
+Everything above used a one-step estimate of the likelihood, known from phase 2 to be biased low. 3.6a puts a chain-rule likelihood in a fixed row-major order in the loss (16 forward passes); 3.6c scores each cell with the input the sampler actually saw when it committed it (8 passes). Three arms, 1000 steps.
+
+**Shows:** the ranking of the three arms is the same with all three estimates, and the unbounded negative term hurts wd1 more with the better estimates (it ends below its start with the row-major one). A floor repairs it every time. Every arm trains best with the crude one-step estimate. Positive-only's early collapse shrinks or disappears with the chain-rule estimates.
+**Does not show:** why the one-step estimate trains best. The mismatch between the order in the loss and the order of the sampler explains part of the gap at most: the second table shows that models trained with the row-major likelihood are not better when sampled in row-major order.
+""",
+    "s36b": """
+## 3.6b A rarer reward and a weaker checker
+
+Two features of the toy favour "train on your own valid rollouts": valid rollouts exist from the start, and a valid grid is always correct. Here: a start where about 1 rollout in 700 is valid (SFT step 90), and a reward that ignores the 2×2 boxes.
+
+**Shows:** from the rare-reward start both imitation arms stay at zero while wd1 and its floored version reach 0.84 and 0.99, so the ranking of 3.2 flips. The weaker checker changes no true solve rate by more than 0.03.
+**Does not show:** why wd1 climbs from the same rare successes, or how often this model writes grids with valid rows and columns but broken boxes (not logged).
+""",
     "end": """
 ## Summary
 
@@ -241,6 +262,14 @@ code("""
 show("3.4b", "summary.csv", "order_policy.png")
 show("3.4b", "transfer_summary.csv")
 """)
+md(T["s36"])
+md(T["s36a"])
+code("""
+show("3.6c", "summary.csv", "rollout_path_likelihood.png", ["arm", "likelihood", "val_at_1000_mean", "val_at_1000_std", "min_val_mean", "logp_valid_change", "final_test_mean"])
+display(pd.read_csv(R / "3.6c" / "fixed_order_eval.csv").groupby("model", sort=False).mean(numeric_only=True))
+""")
+md(T["s36b"])
+code("""show("3.6b", "summary.csv", "rarer_reward_weaker_checker.png")""")
 md(T["end"])
 
 nb = nbf.v4.new_notebook(cells=cells, metadata={"kernelspec": {"name": "python3", "display_name": "Python 3"}})
