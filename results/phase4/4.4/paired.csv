@@ -1,0 +1,15 @@
+a,b,sampler_steps,a_minus_b,lo,hi
+"wd1, floored",wd1 (τ=1),4,0.044,0.022,0.0665
+"wd1, floored",wd1 (τ=1),16,0.032,0.0155,0.048
+wd1 + KL to start,wd1 (τ=1),4,0.0395,0.018,0.0615
+wd1 + KL to start,wd1 (τ=1),16,0.0345,0.0175,0.0505
+"self-training, SFT loss",wd1 (τ=1),4,0.0975,0.0695,0.1264
+"self-training, SFT loss",wd1 (τ=1),16,0.045,0.025,0.0645
+filtered imitation,wd1 (τ=1),4,0.0815,0.055,0.1094
+filtered imitation,wd1 (τ=1),16,0.043,0.024,0.0625
+d1-style GRPO,wd1 (τ=1),4,0.049,0.028,0.071
+d1-style GRPO,wd1 (τ=1),16,0.0375,0.0205,0.053
+positive-only (w⁻=0),wd1 (τ=1),4,0.085,0.0595,0.111
+positive-only (w⁻=0),wd1 (τ=1),16,0.043,0.024,0.061
+"self-training, SFT loss",filtered imitation,4,0.016,-0.001,0.0335
+"self-training, SFT loss",filtered imitation,16,0.002,-0.012,0.015

@@ -29,7 +29,7 @@ C = A3.C
 WD1, POS, FLOOR, KL = "wd1 (τ=1)", "positive-only (w⁻=0)", "wd1, floored", "wd1 + KL to start"
 FILT, SELF, GRPO = "filtered imitation", "self-training, SFT loss", "d1-style GRPO"
 CONTRAST = [(WD1, C[0]), (FLOOR, C[2]), (KL, C[3]), (GRPO, C[4])]      # raise valid, lower invalid rollouts
-PUSH_UP = [(POS, C[1]), (FILT, C[5]), (SELF, C[4])]                    # only raise (valid) rollouts
+PUSH_UP = [(POS, C[1]), (FILT, C[5]), (SELF, "#7b4bb3")]   # not C[4]: GRPO has it and both are in one panel later                    # only raise (valid) rollouts
 ORDER = [WD1, FLOOR, KL, GRPO, POS, FILT, SELF]
 
 
@@ -87,7 +87,7 @@ def _fmt_ci(d: np.ndarray) -> tuple[float, float, float]:
 def load(exp: str):
     c, r = pd.read_csv(OUT / exp / "curves.csv"), pd.read_csv(OUT / exp / "runs.csv")
     for d in (c, r):
-        d["tag"] = d["tag"].fillna("")
+        d["tag"] = d["tag"].astype("string").fillna("")
         d["method"] = d.apply(method, axis=1)
     return c, r
 
@@ -110,7 +110,7 @@ def report(exp: str, config: str, steps: int = 500):
         d = r[r.method == m]
         if d.empty:
             continue
-        per_puzzle[m] = {s: hard[[f"{n}|{s}" for n in d.run]].mean(1).to_numpy() for s in (S, S_ref)}
+        per_puzzle[m] = {s: hard[[f"{n}|{s}" for n in d.run]].mean(axis=1).to_numpy() for s in (S, S_ref)}
         row = {"method": m, "n_seeds": len(d),
                "val_mean": d.final_val.mean(), "val_std": d.final_val.std(),
                "test_mean": d.final_test.mean(), "test_std": d.final_test.std(),
@@ -187,7 +187,6 @@ def report(exp: str, config: str, steps: int = 500):
     hi = max(c.val_solve.max(), start.val_solve) + 0.03
     ax[0].set_ylim(lo, hi); ax[1].set_ylim(lo, hi)
     colour = dict(CONTRAST + PUSH_UP)
-    colour[SELF] = "#7b4bb3"                                    # GRPO and self-training share a panel here
     order = r.groupby("method").final_test.mean().sort_values().index.tolist()
     for y, m in enumerate(order):
         d = r[r.method == m]
@@ -197,7 +196,7 @@ def report(exp: str, config: str, steps: int = 500):
     ax[2].annotate("start", (pred["start"]["test_solve"], len(order) - 0.55), xytext=(3, 0),
                    textcoords="offset points", fontsize=8, color="0.3")
     ax[2].set(yticks=range(len(order)), yticklabels=order, ylim=(-0.6, len(order) - 0.3),
-              xlabel=f"final test solve rate, {band} band, {S} steps (dots: seeds, bar: mean)", title="Final test solve rate")
+              xlabel=f"test solve rate, {band} band, {S} steps", title="Final test solve rate (dots: seeds, bar: mean)")
     ax[2].grid(axis="y", visible=False)
     fig.tight_layout(); fig.savefig(out / "objectives.png", dpi=110); plt.close(fig)
 

@@ -1,0 +1,41 @@
+{
+  "start": {
+    "val_solve": 0.5210000000000002,
+    "val_solve_ref": 0.8054,
+    "test_solve": 0.5352323838080959,
+    "test_solve_ref": 0.8140929535232384
+  },
+  "1_wd1_slow_and_logp_valid_falls": {
+    "seeds_above_start": 0,
+    "below_best_arm": true,
+    "logp_valid_first50": -56.88438333333334,
+    "logp_valid_last50": -68.49101666666667,
+    "held": false
+  },
+  "2_bounding_makes_wd1_faster": {
+    "floored_minus_wd1": [
+      0.04397801099450275,
+      0.021989005497251374,
+      0.06646676661669165
+    ],
+    "kl_minus_wd1": [
+      0.03948025987006497,
+      0.017978510744627686,
+      0.06146926536731634
+    ],
+    "held": true
+  },
+  "3_positive_only_weight_on_invalid_and_collapse": {
+    "w_pos_on_invalid_first50": 0.36108333333333337,
+    "largest_val_drop_first150_per_seed": [
+      -2.220446049250313e-16,
+      -2.220446049250313e-16,
+      -2.220446049250313e-16
+    ],
+    "held": false
+  },
+  "4_own_valid_rollouts_best": {
+    "best_by_test_mean": "self-training, SFT loss",
+    "held": true
+  }
+}
