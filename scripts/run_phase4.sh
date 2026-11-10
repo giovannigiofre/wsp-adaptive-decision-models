@@ -29,6 +29,12 @@ main() {
                $R --set rl.objective=grpo ;;
     # 4.4 horizon check: one wd1 run of 1,000 steps
     rl44-h)    $PY -m phase3.rl --config configs/phase4_rl.yaml --exp 4.4 --seed 0 --tag _h1000 --set rl.max_rl_steps=1000 ;;
+    # 4.5a factorial on floored wd1: order (fixed / sampled, tau_o 0.05) x weights (group / batch).
+    # The fixed-order, group cell is the floored arm of 4.4.
+    rl45a)     local R="$PY -m phase3.rl --config configs/phase4_rl.yaml --exp 4.5a --seed ${SEED:?set SEED} --set rl.objective_params.floor=-75.6"
+               $R rl.order_temp=0.05
+               $R rl.weights_over=batch
+               $R rl.order_temp=0.05 rl.weights_over=batch ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }

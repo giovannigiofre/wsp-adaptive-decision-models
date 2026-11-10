@@ -17,10 +17,10 @@ import pandas as pd
 import torch
 import yaml
 
-from phase2.data import batch_validity, digits_to_tokens
+from phase2.data import batch_validity
 from phase2.evaluate import run_sampler
 from phase2.model import build_model
-from phase2.sampler import select_topk
+from phase2.sampler import gumbel_like, sample  # noqa: F401 (gumbel_like re-exported for the tests)
 from phase2.utils import get_device, seed_all
 
 from .data import load_sets
@@ -36,28 +36,11 @@ def peers9() -> np.ndarray:
     return p & ~np.eye(81, dtype=bool)
 
 
-def gumbel_like(x: torch.Tensor) -> torch.Tensor:
-    """Standard Gumbel noise with the shape of x."""
-    e = (-torch.log(torch.rand_like(x).clamp_min(1e-12))).clamp_min(1e-12)   # Exp(1), kept away from 0
-    return -torch.log(e)
-
-
 @torch.no_grad()
 def sample_gumbel_order(model, puzzles: torch.Tensor, steps: int, order_temp: float, temperature: float = 1.0):
     """phase2.sampler.sample with the `confidence` order replaced by a draw without replacement from a
     Plackett-Luce distribution with weights confidence^(1/order_temp) (Gumbel top-k)."""
-    grid, masked = puzzles.clone(), puzzles == 0
-    for s in range(steps):
-        remaining = masked.sum(1)
-        k = torch.ceil(remaining.float() / (steps - s)).long()
-        logits = model(digits_to_tokens(grid)).float()
-        flat = (logits / temperature).softmax(-1).reshape(-1, logits.shape[-1])
-        chosen = torch.multinomial(flat, 1).view(logits.shape[:2])
-        conf = logits.softmax(-1).gather(-1, chosen.unsqueeze(-1)).squeeze(-1)
-        commit = select_topk(conf.clamp_min(1e-12).log() / order_temp + gumbel_like(conf), masked, k)
-        grid = torch.where(commit, chosen + 1, grid)
-        masked = masked & ~commit
-    return grid
+    return sample(model, puzzles, steps, "confidence", temperature, order_temp=order_temp).grid
 
 
 def error_structure(grid, step, puzzle, sol, S: int) -> tuple[dict, list[dict]]:
@@ -143,7 +126,6 @@ def main():
     idx = idx[torch.randperm(len(idx))[:a.n_puzzles]].to(dev)
     p, sol = sets["train"].puzzles[idx], sets["train"].solutions[idx]
     rep, rsol = p.repeat_interleave(a.group, 0), sol.repeat_interleave(a.group, 0)
-    from phase2.sampler import sample
     rows, same = [], {}
     for tau in [0.0] + a.order_temps:                                  # 0.0 = the deterministic order used so far
         grids = torch.cat([sample(model, rep[i:i + 1024], a.rollout_steps, "confidence", 1.0).grid if tau == 0 else

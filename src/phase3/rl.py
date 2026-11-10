@@ -55,7 +55,7 @@ from phase2.train_diffusion import diffusion_loss
 from phase2.utils import CACHE as PHASE2_CACHE
 from phase2.utils import apply_overrides, env_record, get_device, load_cfg, seed_all
 
-from .objectives import KIND, WEIGHTED, advantages, grpo_loss, weight_diagnostics, weighted_loss
+from .objectives import KIND, WEIGHTED, advantages, grpo_loss, wd1_batch, weight_diagnostics, weighted_loss
 from .rewards import REWARDS
 
 CACHE = Path(os.environ.get("PHASE3_CACHE", Path.home() / "dllm-cache" / "phase3"))
@@ -157,7 +157,9 @@ def run_name(rc: dict, seed: int, tag: str = "") -> str:
     parts = [rc["objective"], params, "" if rc["reward"] == "binary" else rc["reward"],
              f"ref{rc['ref_mix']:g}" if rc.get("ref_mix", 0) else "",
              f"refkl{rc['ref_kl']:g}" if rc.get("ref_kl", 0) else "",
-             {"sequential": "seqlik", "trajectory": "trajlik"}.get(rc.get("likelihood", "onestep"), ""), f"seed{seed}{tag}"]
+             {"sequential": "seqlik", "trajectory": "trajlik"}.get(rc.get("likelihood", "onestep"), ""),
+             f"ord{rc['order_temp']:g}" if rc.get("order_temp", 0) else "",
+             "batchw" if rc.get("weights_over", "group") == "batch" else "", f"seed{seed}{tag}"]
     return "_".join(p for p in parts if p)
 
 
@@ -207,6 +209,12 @@ def main():
     if lik not in ("onestep", "sequential", "trajectory"):
         raise SystemExit(f"unknown rl.likelihood {lik!r}")
     sequential = lik != "onestep"                                  # chain-rule estimates: no one-step logp
+    order_temp = rc.get("order_temp", 0.0)                         # phase 4.5a: sampled unmasking order in rollouts
+    batch_w = rc.get("weights_over", "group") == "batch"           # phase 4.5a: wd1 weights over the whole batch
+    if batch_w and rc["objective"] != "wd1":
+        raise SystemExit("rl.weights_over=batch is defined for wd1 only")
+    if batch_w or order_temp:
+        fields = fields + ["frac_equal"]
     dev = get_device(a.device or base["runtime"]["device"])
     name = run_name(rc, a.seed, a.tag)
     if a.exp:
@@ -278,7 +286,7 @@ def main():
         idx = torch.randint(0, len(train), (B,), device=dev)
         P = train.puzzles[idx].repeat_interleave(G, 0)
         with torch.no_grad():
-            ro = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"])
+            ro = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"], order_temp=order_temp)
             O, CS = ro.grid, ro.commit_step
         valid = batch_validity(O, P).view(B, G)
         r = reward_fn(O, P).view(B, G)
@@ -298,12 +306,16 @@ def main():
                     norms.append(update(loss)); losses.append(loss.item())
         else:
             A, keep = advantages(r)
+            if batch_w or order_temp:
+                row["frac_equal"] = 1 - keep.float().mean().item()   # groups with equal rewards, used or not
+            if batch_w:                                    # every group is used, also those with equal rewards
+                keep = torch.ones_like(keep)
             row["frac_skipped"] = 1 - keep.float().mean().item()
             if keep.any():
                 Pk, Ok = P.view(B, G, -1)[keep].reshape(-1, P.shape[1]), O.view(B, G, -1)[keep].reshape(-1, P.shape[1])
                 vk = valid[keep]
                 if kind == "weighted":
-                    gw = WEIGHTED[rc["objective"]](r, **params)
+                    gw = wd1_batch(r, **params) if batch_w else WEIGHTED[rc["objective"]](r, **params)
                     gw.pos, gw.neg = gw.pos[keep], gw.neg[keep]
                     for _ in range(mu):
                         extra = prompt_mask(Pk, p_mask)   # same single random draw as before
@@ -367,7 +379,7 @@ def main():
     final_test, final_test_s1 = evaluate(test)
     summ = {"name": name, "objective": rc["objective"], "objective_params": params,
             "reward": rc["reward"], "ref_mix": ref_mix, "ref_kl": ref_kl,
-            "likelihood": lik, "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
+            "likelihood": lik, "order_temp": order_temp, "weights_over": "batch" if batch_w else "group", "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
             "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,

@@ -36,6 +36,8 @@ rl:
   rollout_temperature: 1.0
   rollout_strategy: confidence
   rollout_steps: 4
+  order_temp: 0.0        # 4.5a: > 0 samples the unmasking order in rollouts (Gumbel top-k on log confidence / order_temp)
+  weights_over: group    # 4.5a: group | batch (wd1 softmax over the whole batch, no group skipped)
   eval_steps_ref: 16     # also report val/test solve rate at the default sampler budget of 4.1 and 4.2
   prompt_mask_prob: 0.15
   inner_steps: 4

@@ -10,6 +10,7 @@ so `pos` raises a completion's likelihood and `neg` lowers it. A = r - group mea
                          variant. Same numbers as phase2.rl_wd1 (checked in tests/test_objectives_sign.py).
                          floor (not in the paper): the negative term uses max(log p_hat, floor), so a
                          completion is no longer pushed down once its log p_hat is below the floor.
+  wd1_batch(...)         wd1 with weights normalised over the whole batch, see the function (phase 4.5a).
   reinforce(normalize)   pos = relu(A), neg = relu(-A): the plain policy gradient with the group-mean
                          baseline, i.e. linear instead of softmax weights. normalize divides A by the group std.
   filtered()             pos = uniform over the best-reward completions of the group, neg = 0: the
@@ -53,6 +54,16 @@ def advantages(r: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 def wd1(r: torch.Tensor, tau: float = 1.0, beta: float = 1.0, floor: float | None = None) -> GroupWeights:
     A, keep = advantages(r)
     return GroupWeights(torch.softmax(A / tau, dim=1), beta * torch.softmax(-A / tau, dim=1), keep, floor)
+
+
+def wd1_batch(r: torch.Tensor, tau: float = 1.0, beta: float = 1.0, floor: float | None = None) -> GroupWeights:
+    """wd1 with the softmax taken over all B*G completions of the batch instead of within each group
+    (phase 4.5a). Weights are multiplied by B, so they sum to 1 per group on average as in `wd1`. A group
+    whose rewards are all equal now gets a net weight (pull-up if they are above the batch mean,
+    push-down if below), so no group is skipped. With B = 1 it equals `wd1`."""
+    B = r.shape[0]
+    gw = wd1(r.reshape(1, -1), tau, beta, floor)
+    return GroupWeights(gw.pos.view_as(r) * B, gw.neg.view_as(r) * B, torch.ones(B, dtype=torch.bool, device=r.device), floor)
 
 
 def reinforce(r: torch.Tensor, normalize: bool = False) -> GroupWeights:
