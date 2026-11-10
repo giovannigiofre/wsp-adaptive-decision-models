@@ -3,6 +3,10 @@
     PYTHONPATH=src python -m phase4.analysis data --config configs/phase4.yaml
 
 Training (step 4.1) may start only if every line of the gate table says PASS.
+
+Step 4.1 report (training curve, val solve rate per band x sampler steps for the plateau model):
+
+    PYTHONPATH=src python -m phase4.analysis sft --size medium
 """
 from __future__ import annotations
 
@@ -236,18 +240,86 @@ def data_report(cfg: dict, root: Path, out: Path, train_sample: int = 5000) -> b
     return passed
 
 
+BAND_COLORS = {"all": "#333333", "easy": "#2a78b5", "medium": "#d9822b", "hard": "#8e44ad"}
+
+
+def sft_report(cfg: dict, name: str, out: Path, budgets=(1, 4, 8, 16, 32, 81), split: str = "val") -> None:
+    """Training curve from <name>.csv and solve rate per band x sampler steps (confidence, greedy) for final.pt."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import torch
+
+    from phase2.evaluate import bootstrap_ci, run_sampler
+    from phase2.model import build_model
+    from phase2.utils import get_device
+
+    from .data import load_sets
+
+    log = pd.read_csv(out / f"{name}.csv")
+    done = json.loads((out / f"{name}.json").read_text())
+    fig, ax = plt.subplots(1, 2, figsize=(10, 3.6))
+    ax[0].plot(log.step, log.train_loss, color="#999999", lw=1, label="train (last batch)")
+    ax[0].plot(log.step, log.val_loss, color="#333333", lw=2, label="val")
+    ax[0].set_yscale("log"); ax[0].set_xlabel("training step"); ax[0].set_ylabel("masked diffusion loss (log scale)")
+    ax[0].set_title(f"{done['n_params'] / 1e6:.2f}M model, stop: {done['stop_reason']} at step {done['final_step']:,}", fontsize=10)
+    for b in ("easy", "medium", "hard"):
+        ax[1].plot(log.step, log[f"val_solve_{b}"], color=BAND_COLORS[b], lw=1.5, label=b)
+    ax[1].plot(log.step, log.val_solve, color=BAND_COLORS["all"], lw=2, ls="--", label="all")
+    ax[1].set_ylim(0, 1.02); ax[1].set_xlabel("training step"); ax[1].set_ylabel(f"{split} solve rate (confidence, 16 steps)")
+    for a in ax:
+        a.grid(alpha=0.25); a.legend(frameon=False, fontsize=8)
+        a.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout(); fig.savefig(out / f"{name}_training_curve.png", dpi=110); plt.close(fig)
+
+    dev = get_device(cfg["runtime"]["device"])
+    sets, bands, names = load_sets(cfg, dev, splits=(split,))
+    ps, band = sets[split], bands[split].cpu()
+    model = build_model(cfg).to(dev)
+    model.load_state_dict(torch.load(Path(done["ckpt_dir"]) / "final.pt", map_location=dev))
+    rows = []
+    for steps in budgets:
+        t0 = time.time()
+        solved = run_sampler(model, ps, steps, "confidence", batch=1024)["solved"].numpy().astype(float)
+        dt = time.time() - t0
+        for label, m in [("all", np.ones(len(solved), bool))] + [(n, (band == b).numpy()) for b, n in enumerate(names)]:
+            lo, hi = bootstrap_ci(solved[m])
+            rows.append({"split": split, "strategy": "confidence", "steps": steps, "band": label, "n": int(m.sum()),
+                         "solve": solved[m].mean(), "lo": lo, "hi": hi, "seconds": dt})
+    df = pd.DataFrame(rows)
+    df.to_csv(out / f"{name}_solve_by_steps.csv", index=False)
+    fig, a = plt.subplots(figsize=(5.6, 3.6))
+    for label in ["easy", "medium", "hard", "all"]:
+        d = df[df.band == label]
+        a.errorbar(d.steps, d.solve, yerr=[d.solve - d.lo, d.hi - d.solve], color=BAND_COLORS[label], marker="o", ms=5,
+                   lw=2 if label != "all" else 1.5, ls="--" if label == "all" else "-", capsize=2, label=label)
+    a.set_xscale("log"); a.set_xticks(list(budgets)); a.set_xticklabels([str(b) for b in budgets]); a.minorticks_off()
+    a.set_ylim(0, 1.02); a.set_xlabel("sampler steps (confidence, greedy)"); a.set_ylabel(f"{split} solve rate (95% bootstrap)")
+    a.grid(alpha=0.25); a.legend(frameon=False, fontsize=8, title="band"); a.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout(); fig.savefig(out / f"{name}_solve_by_steps.png", dpi=110); plt.close(fig)
+    print(df.pivot(index="steps", columns="band", values="solve").round(3).to_string())
+    print(df[df.band == "hard"][["steps", "solve", "lo", "hi", "seconds"]].round(3).to_string(index=False))
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=["data"])
+    ap.add_argument("what", choices=["data", "sft"])
     ap.add_argument("--config", default="configs/phase4.yaml")
     ap.add_argument("--root", default=None)
-    ap.add_argument("--out", default="results/phase4/data_report.md")
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--name", default="sft")
+    ap.add_argument("--size", default=None, help="key of `sizes` in the config (sft report)")
     a = ap.parse_args()
     cfg = yaml.safe_load(open(a.config))
+    if a.what == "sft":
+        if a.size:
+            cfg["model"].update(cfg["sizes"][a.size])
+        sft_report(cfg, a.name, Path(a.out or "results/phase4/sft"))
+        return
     root = Path(a.root).expanduser() if a.root else cache_dir(cfg)
-    ok = data_report(cfg, root, Path(a.out))
-    print("gate:", "PASS" if ok else "FAIL", "->", a.out)
-
+    ok = data_report(cfg, root, Path(a.out or "results/phase4/data_report.md"))
+    print("gate:", "PASS" if ok else "FAIL", "->", a.out or "results/phase4/data_report.md")
 
 if __name__ == "__main__":
     main()
