@@ -140,7 +140,7 @@ Phase 3 never varied learning rate, group size, rollout temperature or inner ste
 
 ## Code
 - Generalise rather than copy: `src/phase2/` (sudoku, data, model, sampler) takes the box size as a parameter; `src/phase3/rl.py` reads the grid size from the config. New code only where needed: `src/phase4/generate.py` (grids, puzzles, difficulty flag), `src/phase4/analysis.py`, `configs/phase4.yaml`, `scripts/run_phase4.sh`.
-- Regression guard before anything else: after the generalisation, one phase 2 SFT evaluation and one short phase 3 RL run must reproduce their committed numbers exactly (MPS was bit-repeatable in phase 3).
+- Regression guard before anything else: after the generalisation, one phase 2 SFT evaluation and one short phase 3 RL run must reproduce their committed numbers up to MPS run-to-run noise. Outcome (step 4.1): the phase 2 strategies table is identical; in the phase 3 RL log the rewards, valid shares and val solve rates are identical, and the loss, gradient norm and likelihood columns differ by up to 4e-6, the same amount as two runs of the unchanged code. The earlier wording here asked for an exact match on the assumption that MPS was bit-repeatable; that assumption was wrong for these columns.
 - The runner does not get edited while a launch is running (lesson from 3.6b).
 
 ## Decisions taken (10 Nov 2026)
