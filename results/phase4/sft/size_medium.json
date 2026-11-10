@@ -1,0 +1,41 @@
+{
+ "name": "size_medium",
+ "stop_reason": "time_budget",
+ "final_step": 2971,
+ "best_val_loss": 0.05103625822812319,
+ "best_val_loss_step": 2971,
+ "final": {
+  "step": 2971,
+  "train_loss": 0.07180877933140267,
+  "val_loss": 0.05103625822812319,
+  "val_solve": 0.8073852062225342,
+  "val_cell_acc": 0.9106450080871582,
+  "val_solve_easy": 1.0,
+  "val_solve_medium": 0.9371257424354553,
+  "val_solve_hard": 0.485029935836792,
+  "lr": 0.0003,
+  "elapsed_s": 1200.272912979126
+ },
+ "n_params": 1876489,
+ "model": {
+  "grid_n": 9,
+  "n_layers": 6,
+  "d_model": 160,
+  "n_heads": 4,
+  "dropout": 0.1,
+  "pos_embedding": "structured"
+ },
+ "wall_clock_s": 1209.2295660972595,
+ "overrides": [],
+ "size": "medium",
+ "seed": 0,
+ "env": {
+  "python": "3.12.13",
+  "torch": "2.15.0",
+  "device": "mps",
+  "machine": "arm64",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "torch_threads": 4
+ },
+ "ckpt_dir": "/Users/giovannigiofre/dllm-cache/phase4/sft/size_medium"
+}
