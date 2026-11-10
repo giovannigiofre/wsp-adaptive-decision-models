@@ -136,6 +136,38 @@ Frozen weak denoiser, one cell per step, test solve rate:
 - The hidden-state policy is tied to its denoiser: on every other denoiser, including one 10 SFT steps away, it is below the confidence rule.
 - Here the log-probability of an order is exact, so no likelihood proxy is involved, unlike in tracks A–C.
 
+## Robustness checks added after the summary (3.6a, 3.6b, 3.6c)
+
+Three checks on the conclusions above, each with a prediction committed before its runs. They change two of the six points of the short version.
+
+**The likelihood estimate (3.6a, 3.6c).** Val solve rate at step 1000, 3 seeds:
+
+| Arm | one-step proxy | sequential, row-major (3.6a) | along the rollout's own path (3.6c) |
+|---|---|---|---|
+| wd1 | 0.842 ± 0.010 | 0.333 ± 0.016 | 0.532 ± 0.019 |
+| wd1, floored | 0.982 ± 0.005 | 0.815 ± 0.008 | 0.925 ± 0.007 |
+| positive-only | 0.989 ± 0.004 | 0.952 ± 0.010 | 0.931 ± 0.003 |
+
+![rollout-path likelihood](3.6c/rollout_path_likelihood.png)
+
+- Point 3 survives and gets stronger: the unbounded negative term hurts wd1 with every estimate, and more with the better ones. With the row-major chain-rule likelihood wd1 ends *below* its start; a floor repairs it each time.
+- Every arm trains best with the crude one-step proxy. The order mismatch between loss and sampler explains part of the gap for the wd1 arms and none for positive-only; models trained with the row-major likelihood are not better when sampled in row-major order. The reason is not known.
+- Positive-only's early collapse (point 2) is a property of the one-step proxy as much as of the flat weights: it shrinks with the sequential estimate (lowest val 0.30) and is absent with the rollout-path one (0.41).
+
+**A rarer reward and a weaker checker (3.6b).** Test solve rate, 1500 steps, 3 seeds:
+
+| Arm | phase 2 start, strict reward | SFT step 90 start (about 1 valid rollout in 700) | phase 2 start, reward ignores the boxes |
+|---|---|---|---|
+| wd1 | 0.860 | 0.836 ± 0.009 | 0.882 ± 0.004 |
+| wd1, floor −12 | 0.991 | 0.987 ± 0.004 | 0.989 ± 0.002 |
+| filtered imitation | 0.998 | 0.000 | 0.996 ± 0.001 |
+| self-training, SFT loss | 0.999 | 0.001 | 0.999 ± 0.001 |
+
+![rarer reward, weaker checker](3.6b/rarer_reward_weaker_checker.png)
+
+- Point 4 needs a condition: "train on your own valid rollouts" is best only where valid rollouts are not too rare. From SFT step 90 both imitation arms stay at zero and the floored wd1 is the best arm. Why the wd1 arms climb from the same rare successes was not tested.
+- A reward that accepts Latin squares with broken boxes changed no arm's true solve rate by more than 0.03.
+
 ## Predictions that were wrong
 
 Each experiment's prediction was committed before its runs. These are the ones that failed:
@@ -149,21 +181,25 @@ Each experiment's prediction was committed before its runs. These are the ones t
 - 3.3: the confidence token would reach AUROC 0.90 and beat the recalibrated implicit confidence. It did neither.
 - 3.4b: a head trained with the solutions would reach about 0.85. It reached 0.64.
 - 3.1g: wd1 + KL from SFT step 100 would end below plain wd1 (it ended 10 points above), and the floored wd1 would be unstable from the 10-solution model (it was stable).
+- 3.6a: wd1 with the sequential likelihood would stay within 0.05 of its one-step result (it fell to 0.33, below its start), and the floored wd1 would reach 0.95 (0.82).
+- 3.6b: the imitation arms would dip and recover from SFT step 90 (they never left zero), and the lenient reward would cost them at least 5 points of true solve rate (it cost nothing).
+- 3.6c: wd1 with the rollout-path likelihood would reach 0.70 (0.53), positive-only 0.95 with a dip (0.93, no dip), and sequentially trained models would be at least 0.15 better in row-major order (at most 0.03).
 
 ## Run notes
 
-- **Three experiments are not in the original spec:** 3.2b, 3.1g and 3.3b. Each was added after seeing a result, and each has its own prediction committed before its runs. The 3.3b prediction was written after a 40-step smoke test of the code and says so.
+- **Six experiments are not in the original spec:** 3.2b, 3.1g, 3.3b and the robustness checks 3.6a–c. Each was added after seeing a result, and each has its own prediction committed before its runs. The 3.3b prediction was written after a 40-step smoke test of the code and says so.
 - **Deviations from the spec:** 3.3 used wd1 at τ = 1 for the grid instead of the best objective, because the best objectives leave almost no failures to calibrate on. The no-RL calibration baseline recalibrates the puzzle-level score, because scaling the logits would change the unmasking order. In 3.1d no subset size landed in the target window and the nearest (10 solutions, val 0.65) was used, as the rule said.
 - **Compute:** about 240 training runs on one Apple M5 (24 GB) in about 11 hours of wall-clock time, three runs at a time on MPS. Two launches took 2 h 10 min each, over the 2 h guideline, because CPU jobs from 3.4b slowed the GPU runs.
 - **Timings are not clean.** Runs shared the machine and several were interrupted and resumed; `wall_clock_s` in the run tables is not a benchmark. A 1,500-step RL run takes about 2.8 min alone.
 - **Resumed runs** were checked against uninterrupted ones (3.1a against 3.0, equal on the first 500 steps). After a trainer change added a log column, the local per-step logs of resumed runs were repaired by inserting the empty column.
 - **Mixed devices in 3.4b:** 12 of its 26 runs ran on CPU, the rest on MPS. Recorded per run.
+- **3.6b launch bug:** the first launch ran 15 of 24 runs, because `xargs -L 1` merged argument lines ending in a blank; fixed and the 9 missing runs rerun (details in `experiments/3.6b/README.md`). The 3.6 checks added 42 runs and about 3 hours of wall-clock time.
 - Only compact logs are committed (one row per evaluation). Per-step logs and checkpoints are in `~/dllm-cache/phase3/`.
 
 ## Limitations
 
 - **One toy task.** 16 cells, 4 digits, 288 grids. A valid grid is always the correct answer, and valid rollouts are common from the start. Both facts favour objectives that imitate valid rollouts.
-- **A one-step likelihood proxy** stands in for the likelihood in every objective of tracks A–C. Phase 2 found it correlates with a sequential estimate (Spearman 0.86) but is biased low.
+- **A one-step likelihood proxy** stands in for the likelihood in every objective of tracks A–C. Phase 2 found it correlates with a sequential estimate (Spearman 0.86) but is biased low. 3.6a and 3.6c replaced it for three arms only, at 1000 steps; the ranking of those arms held, the absolute numbers did not.
 - **Few seeds, one hyper-parameter setting.** Learning rate, group size, inner steps and rollout temperature were never varied. The floor (−12) and the KL weight (0.01) were each chosen from two values.
 - **Every gradient was clipped** to norm 1 in the weighted objectives, so scaling a loss changed its direction and never its size.
 - **Short runs.** 1,500 steps, about three minutes. wd1 was still improving slowly at step 2,000.

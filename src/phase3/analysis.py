@@ -465,10 +465,11 @@ def exp_3_1g():
     show(summary=summ)
 
 
-def exp_3_6a():
-    """Sequential likelihood in the loss (1000 steps) against the one-step runs of 3.1b/3.1c at matched steps."""
-    exp = "3.6a"
-    c, r = load_many("3.6a", "3.1b", "3.1c")
+def exp_3_6a(exp: str = "3.6a"):
+    """Chain-rule likelihoods in the loss (1000 steps) against the one-step runs of 3.1b/3.1c at matched steps.
+    3.6a: fixed-order sequential. 3.6c adds the likelihood along the rollout's own path."""
+    liks = (("onestep", "-"), ("sequential", "--")) + ((("trajectory", ":"),) if exp == "3.6c" else ())
+    c, r = load_many(*(["3.6c"] if exp == "3.6c" else []), "3.6a", "3.1b", "3.1c")
     for d in (c, r):
         d["likelihood"] = d["likelihood"].fillna("onestep")
     c, r = c[c.tau == 1.0], r[r.tau == 1.0]
@@ -486,27 +487,27 @@ def exp_3_6a():
     cols = {"wd1": C[0], "wd1, floored": C[2], "positive-only": C[1]}
     fig, ax = plt.subplots(1, 2, figsize=(10, 3.5))
     for lab, col in cols.items():
-        for lik, ls in (("onestep", "-"), ("sequential", "--")):
+        for lik, ls in liks:
             d = c[(c.arm == lab) & (c.likelihood == lik) & (c.step <= 1000)]
             band(ax[0], d, "val_solve", col, f"{lab}, {lik}", ls=ls)
             if lab != "positive-only":
                 band(ax[1], d[d.step > 0], "logp_valid", col, f"{lab}, {lik}", ls=ls)
-    ax[0].set(title="Validation (dashed = sequential likelihood in the loss)", xlabel="RL step",
+    ax[0].set(title="Validation (dashed: sequential, dotted: rollout path)" if exp == "3.6c"
+              else "Validation (dashed = sequential likelihood in the loss)", xlabel="RL step",
               ylabel="val solve rate (greedy, S=8)", ylim=(-0.02, 1.02))
     ax[1].set(title="Log-likelihood of valid rollouts, each by its own estimate", xlabel="RL step",
               ylabel="log p̂ of valid rollouts (25-step mean)")
     ax[0].legend(fontsize=7, loc="lower right")
     ax[1].legend(fontsize=7, loc="lower left")
-    save(fig, exp, "sequential_likelihood.png")
+    save(fig, exp, "sequential_likelihood.png" if exp == "3.6a" else "rollout_path_likelihood.png")
     v1000 = c[c.step == 1000].groupby(["arm", "likelihood"]).val_solve.agg(["mean", "std"]).add_prefix("val_at_1000_")
     lo = c.groupby(["arm", "likelihood", "seed"]).val_solve.min().groupby(["arm", "likelihood"]).mean().rename("min_val_mean")
     first = c[(c.step > 0) & (c.step <= 50)].groupby(["arm", "likelihood"]).logp_valid.mean().rename("logp_valid_steps_1_50")
     last = c[(c.step > 750) & (c.step <= 1000)].groupby(["arm", "likelihood"]).logp_valid.mean().rename("logp_valid_steps_751_1000")
     summ = pd.concat([v1000, lo, first, last], axis=1).reset_index()
     summ["logp_valid_change"] = summ.logp_valid_steps_751_1000 - summ.logp_valid_steps_1_50
-    fin = r[r.likelihood == "sequential"].groupby("arm").agg(final_test_mean=("final_test", "mean"),
-                                                             final_test_std=("final_test", "std")).reset_index()
-    fin["likelihood"] = "sequential"
+    fin = r[r.likelihood != "onestep"].groupby(["arm", "likelihood"]).agg(
+        final_test_mean=("final_test", "mean"), final_test_std=("final_test", "std")).reset_index()
     summ = summ.merge(fin, on=["arm", "likelihood"], how="left")
     summ.round(4).to_csv(OUT / exp / "summary.csv", index=False)
     show(summary=summ)
@@ -776,7 +777,7 @@ def exp_3_2b():
     show(summary=summ)
 
 
-EXPERIMENTS: dict = {"3.6a": exp_3_6a, "3.6b": exp_3_6b, "3.3b": lambda: exp_3_3("3.3b"), "3.1g": exp_3_1g, "3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
+EXPERIMENTS: dict = {"3.6a": exp_3_6a, "3.6c": lambda: exp_3_6a("3.6c"), "3.6b": exp_3_6b, "3.3b": lambda: exp_3_3("3.3b"), "3.1g": exp_3_1g, "3.2b": exp_3_2b, "3.3": exp_3_3, "3.4b": exp_3_4b, "3.1a": exp_3_1a, "3.1b": exp_3_1b, "3.1c": exp_3_1c, "3.1d-sft": exp_3_1d_sft,
                      "3.1d": exp_3_1d, "3.1e": exp_3_1e, "3.1f": exp_3_1f, "3.2": exp_3_2}
 
 

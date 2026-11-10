@@ -190,3 +190,28 @@ def test_run_name_sequential():
     rc = {"objective": "wd1", "objective_params": {}, "objective_defaults": DEFAULTS, "reward": "binary",
           "likelihood": "sequential"}
     assert run_name(rc, 1) == "wd1_beta1_tau1_seqlik_seed1"
+
+
+def test_trajectory_cell_logp_reduces_to_one_step_and_to_sequential():
+    from phase3.rl import sequential_cell_logp, trajectory_cell_logp
+    torch.manual_seed(3)
+    model = TinyDLLM(n_layers=1, d_model=32, n_heads=2, dropout=0.0).eval()
+    P, O, _ = _group()
+    given = P != 0
+    with torch.no_grad():
+        # every hidden cell committed at step 0 -> the one-step estimate
+        cs0 = torch.where(given, torch.full_like(P, -1), torch.zeros_like(P))
+        logp, _ = one_step_logprobs(model, P, O)
+        assert torch.allclose((trajectory_cell_logp(model, P, O, cs0) * ~given).sum(1), loglik(logp, O, given), atol=1e-5)
+        # one hidden cell per step in row-major order -> the fixed-order sequential estimate
+        rank = (~given).long().cumsum(1) - 1
+        cs1 = torch.where(given, torch.full_like(P, -1), rank)
+        assert torch.allclose(trajectory_cell_logp(model, P, O, cs1) * ~given,
+                              sequential_cell_logp(model, P, O) * ~given, atol=1e-5)
+    assert trajectory_cell_logp(model, P, O, cs1).requires_grad
+
+
+def test_run_name_trajectory():
+    rc = {"objective": "wd1", "objective_params": {}, "objective_defaults": DEFAULTS, "reward": "binary",
+          "likelihood": "trajectory"}
+    assert run_name(rc, 1) == "wd1_beta1_tau1_trajlik_seed1"

@@ -63,6 +63,8 @@ Phase 3 used the toy (about 240 training runs of 1–4 minutes) to find out why 
 
 **A stated-confidence token learns to check its own answer, but only with a stationary target.** Trained together with the grid, it locked onto one value and stopped exploring; a two-parameter recalibration of the model's existing confidence was far better (Brier 0.067 against 0.128 raw). On a frozen model, the same token trained from the Brier-shaped reward alone reached a Brier score of 0.03–0.05 by learning to verify the completed grid. Read from the puzzle alone, it states the base rate.
 
+**Three robustness checks, run after the summary, moved two of these claims.** (i) With a chain-rule likelihood in the loss instead of the one-step proxy, the ranking of wd1, floored wd1 and positive-only is unchanged, but every arm trains worse and plain wd1 ends below its start (val 0.33 at step 1000 against 0.84; 0.53 when the likelihood follows the sampler's own path). The unbounded push down is therefore not an artefact of the proxy; why the crude proxy trains best is not known. (ii) From an earlier start where about 1 rollout in 700 is valid, both "train on your own valid rollouts" objectives learn nothing (0.00) and the floored wd1 reaches 0.99: the most robust objective above is robust only where successes are not too rare. (iii) A reward that ignores the 2×2 boxes changed no true solve rate by more than 0.03. Details and the failed predictions: `experiments/3.6a`–`3.6c`.
+
 ## What surprised me
 - How close LLaDA's default decoding is to left-to-right generation.
 - That fewer denoising steps cost almost nothing at these sizes. Confidence-based adaptive step budgets look like the obvious next thing to try.

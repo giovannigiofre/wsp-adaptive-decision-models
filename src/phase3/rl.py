@@ -12,6 +12,8 @@ wd1/trainers/rev_grpo_ref_pol_trainer.py, `generate`). The loss is unchanged, as
 
 `rl.likelihood: sequential` replaces the one-step estimate in the weighted objectives by the fixed-order
 sequential likelihood (16 forward passes per inner step), which phase 2 used as the reference.
+`rl.likelihood: trajectory` uses the chain rule along the rollout's own unmasking path instead (one pass per
+sampler step): the log-probability of the values the sampler actually chose, in the states it chose them in.
 
 `rl.ref_kl` > 0 adds, to a weighted-likelihood objective, a penalty towards the frozen start: ref_kl times
 the per-cell KL estimate exp(d) - d - 1 with d = log p_ref - log p (the estimator of the d1 GRPO trainer),
@@ -102,6 +104,26 @@ def sequential_cell_logp(model, puzzles: torch.Tensor, completions: torch.Tensor
     return out
 
 
+def trajectory_cell_logp(model, puzzles: torch.Tensor, completions: torch.Tensor, commit_step: torch.Tensor,
+                         extra: torch.Tensor | None = None) -> torch.Tensor:
+    """(N,16) per-cell log p along the rollout's own unmasking path: a cell committed at sampler step s is
+    predicted with the givens (minus the prompt mask `extra`) and the cells committed before s revealed,
+    which is the input the sampler saw when it chose that value. One forward pass per sampler step, with
+    gradient. The choice of *which* cells to commit is treated as fixed (no gradient through the order)."""
+    given = puzzles != 0
+    shown = given if extra is None else given & ~extra
+    out = torch.zeros(completions.shape, device=completions.device, dtype=torch.float32)
+    for s in range(int(commit_step.max().item()) + 1):
+        now = ~given & (commit_step == s)
+        if not now.any():
+            continue
+        visible = shown | (~given & (commit_step >= 0) & (commit_step < s))
+        inp = torch.where(visible, completions, torch.zeros_like(completions))
+        lp = cell_logp(F.log_softmax(model(digits_to_tokens(inp)).float(), -1), completions)
+        out = torch.where(now, lp, out)
+    return out
+
+
 def predictive_entropy(logp: torch.Tensor, given: torch.Tensor) -> torch.Tensor:
     """Mean entropy (nats, max ln 4) of the one-step predictive distribution over non-given cells."""
     ent = -(logp.exp() * logp).sum(-1)
@@ -129,7 +151,7 @@ def run_name(rc: dict, seed: int, tag: str = "") -> str:
     parts = [rc["objective"], params, "" if rc["reward"] == "binary" else rc["reward"],
              f"ref{rc['ref_mix']:g}" if rc.get("ref_mix", 0) else "",
              f"refkl{rc['ref_kl']:g}" if rc.get("ref_kl", 0) else "",
-             "seqlik" if rc.get("likelihood", "onestep") == "sequential" else "", f"seed{seed}{tag}"]
+             {"sequential": "seqlik", "trajectory": "trajlik"}.get(rc.get("likelihood", "onestep"), ""), f"seed{seed}{tag}"]
     return "_".join(p for p in parts if p)
 
 
@@ -166,7 +188,10 @@ def main():
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
     mu, p_mask, ref_mix = rc["inner_steps"], rc["prompt_mask_prob"], rc.get("ref_mix", 0.0)
     ref_kl = rc.get("ref_kl", 0.0) if kind == "weighted" else 0.0
-    sequential = rc.get("likelihood", "onestep") == "sequential"   # weighted objectives only
+    lik = rc.get("likelihood", "onestep")                          # weighted objectives only
+    if lik not in ("onestep", "sequential", "trajectory"):
+        raise SystemExit(f"unknown rl.likelihood {lik!r}")
+    sequential = lik != "onestep"                                  # chain-rule estimates: no one-step logp
     dev = get_device(a.device or base["runtime"]["device"])
     name = run_name(rc, a.seed, a.tag)
     if a.exp:
@@ -232,7 +257,8 @@ def main():
         idx = torch.randint(0, len(train), (B,), device=dev)
         P = train.puzzles[idx].repeat_interleave(G, 0)
         with torch.no_grad():
-            O = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"]).grid
+            ro = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"])
+            O, CS = ro.grid, ro.commit_step
         valid = batch_validity(O, P).view(B, G)
         r = reward_fn(O, P).view(B, G)
         row = {"step": step, "mean_reward": r.mean().item(), "mean_valid": valid.float().mean().item()}
@@ -262,7 +288,9 @@ def main():
                         extra = prompt_mask(Pk, p_mask)   # same single random draw as before
                         if sequential:
                             given = Pk != 0
-                            lp = (sequential_cell_logp(model, Pk, Ok, extra) * (~given)).sum(1).view(-1, G)
+                            cl = (trajectory_cell_logp(model, Pk, Ok, CS.view(B, G, 16)[keep].reshape(-1, 16), extra)
+                                  if lik == "trajectory" else sequential_cell_logp(model, Pk, Ok, extra))
+                            lp = (cl * (~given)).sum(1).view(-1, G)
                             logp = None
                         else:
                             logp, given = one_step_logprobs(model, Pk, Ok, extra=extra)
@@ -316,7 +344,7 @@ def main():
     final_test, final_test_s1 = evaluate(test)
     summ = {"name": name, "objective": rc["objective"], "objective_params": params,
             "reward": rc["reward"], "ref_mix": ref_mix, "ref_kl": ref_kl,
-            "likelihood": "sequential" if sequential else "onestep", "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
+            "likelihood": lik, "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
             "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,

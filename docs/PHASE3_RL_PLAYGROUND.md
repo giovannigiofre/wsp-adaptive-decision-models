@@ -113,6 +113,12 @@ Not in the plan above; each has a README with a prediction committed before its 
 - **3.1g** Rerun the variants that beat wd1 from the phase 2 start (filtered imitation, self-training, floored wd1, wd1 + KL) from the two harder starts of 3.1d.
 - **3.3b** The confidence token on a frozen denoiser, so its target is stationary; REINFORCE instead of wd1 for the token.
 
+Robustness checks added after the summary (3.6), also with predictions committed first:
+
+- **3.6a** wd1, floored wd1 and positive-only with a fixed-order sequential likelihood in the loss instead of the one-step proxy (`rl.likelihood=sequential`).
+- **3.6b** The four best arms from a start where valid rollouts are rare (SFT step 90), and with a reward that ignores the 2×2 boxes (`rl.reward=lenient`).
+- **3.6c** The same three arms as 3.6a with the likelihood along the rollout's own unmasking path (`rl.likelihood=trajectory`), and saved checkpoints sampled in a fixed row-major order.
+
 ## 3.5 Phase 3 summary
 
 `results/phase3/SUMMARY.md`: for each track the question, the prediction, what happened, and what it does and does not show. Then update `results/REPORT.md` and `results/REPORT_SIMPLE.md` with a short phase 3 section and at most three new figures. Keep every negative and flat result.
