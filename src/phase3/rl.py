@@ -135,6 +135,38 @@ def trajectory_cell_logp(model, puzzles: torch.Tensor, completions: torch.Tensor
     return out
 
 
+def exact_trajectory_logp(model, puzzles: torch.Tensor, completions: torch.Tensor, commit_step: torch.Tensor,
+                          dtype=torch.float32) -> torch.Tensor:
+    """(N,) exact log-probability of a rollout of `phase2.sampler.sample` with strategy `confidence`,
+    temperature 1 and order_temp 0 (phase 4.6a, docs/RL_DLLM_DIRECTIONS.md direction 1).
+
+    The sampler draws a digit for every masked cell and commits the k cells whose *drawn* digit has the highest
+    probability. So one step with commit set C, values v and m = min_{i in C} p_i(v_i) has probability
+        prod_{i in C} p_i(v_i)  *  prod_{j masked, not in C} sum_{c: p_j(c) < m} p_j(c),
+    where the second product says that the draw of every cell left masked scored below the committed ones.
+    `trajectory_cell_logp` is the first product only. One forward pass per sampler step, with gradient; the
+    sets {c: p_j(c) < m} are constants of the gradient (they change only where two probabilities cross, and
+    there the probability of a single trajectory jumps). Ties are ignored. Checked against enumeration in
+    tests/test_phase4_exact_logp.py."""
+    given = puzzles != 0
+    out = torch.zeros(len(puzzles), device=completions.device, dtype=dtype)
+    for s in range(int(commit_step.max().item()) + 1):
+        now = ~given & (commit_step == s)
+        if not now.any():
+            continue
+        later = ~given & (commit_step > s)
+        visible = given | (~given & (commit_step >= 0) & (commit_step < s))
+        inp = torch.where(visible, completions, torch.zeros_like(completions))
+        logp = F.log_softmax(model(digits_to_tokens(inp)).to(dtype), -1)
+        lp = cell_logp(logp, completions)
+        out = out + (lp * now).sum(1)
+        if later.any():
+            m = lp.detach().masked_fill(~now, float("inf")).min(1).values
+            below = logp.detach() < m[:, None, None]
+            out = out + ((logp.exp() * below).sum(-1).clamp_min(1e-30).log() * later).sum(1)
+    return out
+
+
 def predictive_entropy(logp: torch.Tensor, given: torch.Tensor) -> torch.Tensor:
     """Mean entropy (nats, max ln 4) of the one-step predictive distribution over non-given cells."""
     ent = -(logp.exp() * logp).sum(-1)
