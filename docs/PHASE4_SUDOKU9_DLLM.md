@@ -36,9 +36,9 @@ Derived estimates for the 1.86M model, to be replaced by measured numbers in 4.1
 
 ## 4.0 Data
 - Solved grids: randomized backtracking fill, seeded. Split by *solution* into train / val / test before any puzzle is built, as in phase 2.
-- Puzzle: hide k cells of a solution, keep it only if the solution is unique (solver that stops at the second solution). Store `(puzzle, solution, k, singles_only)`, where `singles_only` says whether the puzzle falls to naked and hidden singles alone. That flag is the cheap difficulty measure; k alone is a poor one.
-- Bands: easy (k 30–40), medium (41–50), hard (51–56). Exact ranges fixed after measuring how many unique puzzles the generator yields per band and how long it takes.
-- Size target: 100,000 train puzzles, 1,000 val, 2,000 test, generated once and cached under `~/dllm-cache/phase4/` (not committed; generator and seed are).
+- Puzzle: hide k cells of a solution, keep it only if the solution is unique (solver that stops at the second solution). Store `(puzzle, solution, k, difficulty)`, where `difficulty` is 0 if naked singles alone solve the puzzle, 1 if naked and hidden singles do, 2 if neither does (as built; the plan had a single `singles_only` flag). That class is the cheap difficulty measure; k alone is a poor one.
+- Bands: easy (k 30–40), medium (41–50), hard (51–56). Exact ranges fixed after measuring how many unique puzzles the generator yields per band and how long it takes. **Outcome (4.0):** the planned ranges were kept. A random removal order reaches k with a unique solution in every attempt up to k = 54, in 97% at 55 and 85% at 56; in a 200-grid trial it was 21% at k = 58 and 0% at k = 60, so the hard band ends at 56.
+- Size target: 100,000 train puzzles, 1,000 val, 2,000 test, generated once and cached under `~/dllm-cache/phase4/` (not committed; generator and seed are). **Outcome (4.0):** 100,002 / 1,002 / 2,001 (equal thirds per band, one solved grid per puzzle), 93 s to generate, 7 MB. Report: [`results/phase4/data_report.md`](../results/phase4/data_report.md), gate passed.
 - Vocabulary: `PAD=0, MASK=1`, digits 1–9 → tokens 2–10.
 - Tests: validity checker on known grids, solver agrees with the stored solution, uniqueness check rejects a puzzle with two solutions, no solution shared between splits.
 

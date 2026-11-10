@@ -1,0 +1,19 @@
+phase: 4
+seeds: [0, 1, 2]
+data:
+  cache_dir: ~/dllm-cache/phase4
+  seed: 0
+  # hidden cells per band, fixed after measuring yield (experiments/4.0): up to k = 56 a random removal
+  # order reaches k with a unique solution in ~90% of attempts; at k = 58 in ~20%, at k = 60 never in 200.
+  bands:
+    easy: [30, 40]
+    medium: [41, 50]
+    hard: [51, 56]
+  # puzzles per band; k is uniform inside the band; every puzzle has its own solution grid
+  per_band:
+    train: 33334
+    val: 334
+    test: 667
+  max_tries_per_solution: 20   # new removal orders tried on a grid before drawing a new grid
+  chunk: 1000                  # puzzles per worker task; each chunk has its own seed, so results do not depend on workers
+  workers: 4
