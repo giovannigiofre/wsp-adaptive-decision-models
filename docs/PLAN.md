@@ -44,7 +44,7 @@ Spec: [PHASE3_RL_PLAYGROUND.md](PHASE3_RL_PLAYGROUND.md). Added after phases 1 a
 | 3.4 Learn the unmasking order with RL on a frozen denoiser | headroom check, solve rate vs heuristics |
 | 3.5 Write-up of phase 3 | `results/phase3/SUMMARY.md`, reports updated |
 
-Three follow-ups were added during the phase, each with its own pre-registered prediction: 3.2b (KL penalty to the start), 3.1g (the better variants from other starting models), 3.3b (the confidence token on a frozen model).
+Three follow-ups were added during the phase, each with its own pre-registered prediction: 3.2b (KL penalty to the start), 3.1g (the better variants from other starting models), 3.3b (the confidence token on a frozen model). Three robustness checks were added after the summary, also with predictions: 3.6a (sequential likelihood in the loss), 3.6b (rarer reward, weaker checker), 3.6c (likelihood along the rollout's own path).
 
 ## Final deliverable
 - Clean repo with reproducible commands per experiment.

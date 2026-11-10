@@ -94,6 +94,12 @@ Phase 3 used the toy to ask *why* positive-only beat wd1, with about 240 short t
 | Can the model learn in which order to fill cells? | Some. An oracle order solves 98% with the same weak model (confidence rule: 56%). RL rediscovers the confidence rule by itself and, with more information, reaches 67%. | Knowing which cell you are right about is almost as hard as solving the puzzle. |
 | Can it learn to say how confident it is? | Yes, if its abilities are not changing while it learns: it then checks its own grid well (Brier 0.03 against 0.07 for the best after-the-fact fix). Trained while still improving, it fails. | A moving target plus flat weights: it locked onto one value and stopped exploring. |
 
+Three extra checks were run afterwards (3.6a–c), and two rows above need a caveat:
+
+- **"Ordinary training on your own valid attempts is best" holds only if valid attempts are not too rare.** From an even earlier snapshot, where about 1 attempt in 700 is valid, that recipe learned nothing (0%), while wd1 with a capped push-down reached 99%.
+- **wd1's push-down problem is real, not a measuring artefact.** With a more exact way of computing "how likely was this attempt", plain wd1 got *worse* (it ended below where it started); the capped version still worked. Every method trained best with the rough estimate, and we do not know why.
+- A sloppier checker (one that forgets the 2×2 boxes) made no measurable difference.
+
 ![starting model](phase3/3.1d/starting_model.png)
 
 ![order policy](phase3/3.4b/order_policy.png)

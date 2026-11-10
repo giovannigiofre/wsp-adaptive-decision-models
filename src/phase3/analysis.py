@@ -492,8 +492,8 @@ def exp_3_6a(exp: str = "3.6a"):
             band(ax[0], d, "val_solve", col, f"{lab}, {lik}", ls=ls)
             if lab != "positive-only":
                 band(ax[1], d[d.step > 0], "logp_valid", col, f"{lab}, {lik}", ls=ls)
-    ax[0].set(title="Validation (dashed = sequential" + (", dotted = rollout path" if exp == "3.6c" else "")
-              + " likelihood in the loss)", xlabel="RL step",
+    ax[0].set(title="Validation (dashed: sequential, dotted: rollout path)" if exp == "3.6c"
+              else "Validation (dashed = sequential likelihood in the loss)", xlabel="RL step",
               ylabel="val solve rate (greedy, S=8)", ylim=(-0.02, 1.02))
     ax[1].set(title="Log-likelihood of valid rollouts, each by its own estimate", xlabel="RL step",
               ylabel="log p̂ of valid rollouts (25-step mean)")
