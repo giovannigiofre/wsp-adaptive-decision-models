@@ -17,6 +17,18 @@ main() {
     sft)       $PY -m phase4.train --name sft --size "${SIZE:?set SIZE=small|medium|large}" --launch-minutes 110 ;;
     sft-report) $PY -m phase4.analysis sft --size "${SIZE:-medium}" ;;
     sampler)   $PY -m phase4.sampler_eval --size "${SIZE:-medium}" ;;   # 4.2, about 11 minutes
+    # 4.4: the seven phase 3 objectives from the plateau model, hard band, 4 sampler steps. One seed per launch
+    # (SEED=0|1|2, about 7 minutes per run alone); the three seeds can run side by side.
+    rl44)      local R="$PY -m phase3.rl --config configs/phase4_rl.yaml --exp 4.4 --seed ${SEED:?set SEED}"
+               $R
+               $R --set rl.objective_params.beta=0
+               $R --set rl.objective_params.floor=-75.6
+               $R --set rl.ref_kl=0.01
+               $R --set rl.objective=filtered
+               $R --set rl.objective=self_diffusion
+               $R --set rl.objective=grpo ;;
+    # 4.4 horizon check: one wd1 run of 1,000 steps
+    rl44-h)    $PY -m phase3.rl --config configs/phase4_rl.yaml --exp 4.4 --seed 0 --tag _h1000 --set rl.max_rl_steps=1000 ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }

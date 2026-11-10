@@ -25,6 +25,12 @@ local cache and `python -m phase3.analysis compact ID` writes one row per evalua
 PYTHONPATH=src python -m phase3.rl --seed 0
 PYTHONPATH=src python -m phase3.rl --seed 0 --set rl.objective_params.beta=0
 PYTHONPATH=src python -m phase3.rl --seed 0 --exp 3.2 --set rl.objective=reinforce
+
+Phase 4: a config with `task: sudoku9` (configs/phase4_rl.yaml) switches the data to one difficulty band of the
+cached 9x9 sets, the start to the 4.1 plateau model and the cache to ~/dllm-cache/phase4; `rl.eval_steps_ref`
+adds a val solve rate at a second sampler budget (column val_solve_ref). Nothing else changes.
+
+PYTHONPATH=src python -m phase3.rl --config configs/phase4_rl.yaml --exp 4.4 --seed 0
 """
 from __future__ import annotations
 
@@ -183,9 +189,18 @@ def main():
     a = ap.parse_args()
     cfg = apply_overrides(load_cfg(a.config), a.set)
     base = load_cfg(cfg["base_config"])
+    p4 = cfg.get("task") == "sudoku9"                              # phase 4: 9x9 data, plateau model, own cache
+    cache, fields = CACHE, FIELDS
+    if p4:
+        from phase4.generate import cache_dir
+        base["model"].update(base["sizes"][cfg["size"]])
+        cache = cache_dir(base)
     rc = cfg["rl"]
     kind, params, reward_fn = KIND[rc["objective"]], objective_params(rc), REWARDS[rc["reward"]]
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
+    S_ref = rc.get("eval_steps_ref")                               # optional second sampler budget at evaluation
+    if S_ref:
+        fields = FIELDS + ["val_solve_ref"]
     mu, p_mask, ref_mix = rc["inner_steps"], rc["prompt_mask_prob"], rc.get("ref_mix", 0.0)
     ref_kl = rc.get("ref_kl", 0.0) if kind == "weighted" else 0.0
     lik = rc.get("likelihood", "onestep")                          # weighted objectives only
@@ -195,7 +210,7 @@ def main():
     dev = get_device(a.device or base["runtime"]["device"])
     name = run_name(rc, a.seed, a.tag)
     if a.exp:
-        a.out, a.ckpt_dir = str(CACHE / a.exp / "logs"), str(CACHE / a.exp / "ckpt")
+        a.out, a.ckpt_dir = str(cache / a.exp / "logs"), str(cache / a.exp / "ckpt")
     out, ck = Path(a.out), Path(a.ckpt_dir) / name
     if (out / f"{name}.json").exists() and not a.force:
         print(f"skip {name}: already finished", flush=True)
@@ -203,12 +218,17 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     ck.mkdir(parents=True, exist_ok=True)
 
-    init = Path(a.init) if a.init else PHASE2_CACHE / cfg["init"]["checkpoint"]
+    init = Path(a.init) if a.init else (cache if p4 else PHASE2_CACHE) / cfg["init"]["checkpoint"]
     init_hash = sha256(init)
     if a.init is None and init_hash != cfg["init"]["sha256"]:
         raise SystemExit(f"{init} does not match the sha256 pinned in {a.config}")
 
-    ds = {k: v.to(dev) for k, v in build_datasets(base, base["data"].get("split_seed", 0)).items()}
+    if p4:
+        from phase4.data import load_sets
+        sets, bands, names = load_sets(base, dev)
+        ds = {k: sets[k].subset((bands[k] == names.index(cfg["band"])).to(dev)) for k in sets}
+    else:
+        ds = {k: v.to(dev) for k, v in build_datasets(base, base["data"].get("split_seed", 0)).items()}
     train, val, test = ds["train"], ds["val"], ds["test"]
     model = build_model(base).to(dev)
     model.load_state_dict(torch.load(init, map_location=dev))
@@ -249,9 +269,10 @@ def main():
         best = (v8, 0)
         torch.save(model.state_dict(), ck / "best.pt")
         with open(log_path, "w", newline="") as f:
-            w = csv.DictWriter(f, FIELDS)
+            w = csv.DictWriter(f, fields)
             w.writeheader()
-            w.writerow({"step": 0, "val_solve": v8, "val_solve_s1": v1, "elapsed_s": 0.0})
+            w.writerow({"step": 0, "val_solve": v8, "val_solve_s1": v1, "elapsed_s": 0.0,
+                        **({"val_solve_ref": solve_rate(model, val, S_ref, "confidence")} if S_ref else {})})
     t0 = time.time()
     for step in range(start, steps + 1):
         idx = torch.randint(0, len(train), (B,), device=dev)
@@ -328,6 +349,8 @@ def main():
             row.update(loss=sum(losses) / len(losses), grad_norm=sum(norms) / len(norms))
         if step % rc["eval_every"] == 0 or step == steps:
             row["val_solve"], row["val_solve_s1"] = evaluate(val)
+            if S_ref:
+                row["val_solve_ref"] = solve_rate(model, val, S_ref, "confidence")
             if row["val_solve"] > best[0]:
                 best = (row["val_solve"], step)
                 torch.save(model.state_dict(), ck / "best.pt")
@@ -338,7 +361,7 @@ def main():
                   f"val={row['val_solve']:.3f} val_s1={row['val_solve_s1']:.3f}", flush=True)
         row["elapsed_s"] = time.time() - t0
         with open(log_path, "a", newline="") as f:
-            csv.DictWriter(f, FIELDS).writerow(row)
+            csv.DictWriter(f, fields).writerow(row)
     torch.save(model.state_dict(), ck / "final.pt")
     final_val, final_val_s1 = evaluate(val)
     final_test, final_test_s1 = evaluate(test)
@@ -350,6 +373,11 @@ def main():
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,
             "final_val_s1": final_val_s1, "final_test_s1": final_test_s1,
             "wall_clock_s_this_session": time.time() - t0, "env": env_record(dev)}
+    if S_ref:
+        summ.update(eval_steps=S, eval_steps_ref=S_ref, final_val_ref=solve_rate(model, val, S_ref, "confidence"),
+                    final_test_ref=solve_rate(model, test, S_ref, "confidence"))
+    if p4:
+        summ.update(band=cfg["band"], n_train=len(train), n_val=len(val), n_test=len(test))
     model.load_state_dict(torch.load(ck / "best.pt", map_location=dev))
     summ["best_test"] = solve_rate(model, test, S, "confidence")
     json.dump(summ, open(out / f"{name}.json", "w"), indent=2)

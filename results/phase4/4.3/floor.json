@@ -1,0 +1,19 @@
+{
+ "n_rollouts": 4096,
+ "valid_share": 0.55517578125,
+ "logp_valid_quantiles_10_25_50_75_90": [
+  -67.53,
+  -60.82,
+  -52.39,
+  -42.74,
+  -34.64
+ ],
+ "logp_invalid_quantiles_10_25_50_75_90": [
+  -75.6,
+  -69.78,
+  -61.64,
+  -53.28,
+  -45.88
+ ],
+ "floor_rule_10th_percentile_invalid": -75.6
+}
