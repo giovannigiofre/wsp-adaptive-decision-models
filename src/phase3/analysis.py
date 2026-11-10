@@ -88,16 +88,18 @@ WINDOW_COLS = ["mean_reward", "mean_valid", "frac_skipped", "loss", "grad_norm",
                "w_pos_on_invalid", "logp_valid", "logp_invalid", "pred_entropy", "clip_frac"]
 
 
-def compact(exp: str):
+def compact(exp: str, src: Path | None = None, dst: Path | None = None):
     """Per-step logs in the local cache -> committed summary: one row per evaluation (window means of
-    the per-step diagnostics since the previous evaluation) in curves.csv, one row per run in runs.csv."""
-    src, dst = CACHE / exp / "logs", OUT / exp
+    the per-step diagnostics since the previous evaluation) in curves.csv, one row per run in runs.csv.
+    `src`/`dst` and the optional `*_ref` columns are used by phase 4 (phase4.rl_analysis)."""
+    src, dst = src or CACHE / exp / "logs", dst or OUT / exp
     dst.mkdir(parents=True, exist_ok=True)
     curves, runs = [], []
     for p in sorted(src.glob("*.json")):
         j = json.load(open(p))
         df = pd.read_csv(p.with_suffix(".csv"))
-        ev = df.dropna(subset=["val_solve"])[["step", "val_solve", "val_solve_s1"]]
+        ev = df.dropna(subset=["val_solve"])[[k for k in ("step", "val_solve", "val_solve_s1", "val_solve_ref")
+                                              if k in df.columns]]
         cols = [c for c in WINDOW_COLS if c in df.columns]
         win = pd.cut(df.step, [-1] + ev.step.tolist(), labels=ev.step.tolist()).astype(float)
         means = df[df.step > 0].groupby(win[df.step > 0], observed=True)[cols].mean().rename_axis("step").reset_index()
@@ -111,6 +113,8 @@ def compact(exp: str):
                      "final_val": j["final_val"], "final_test": j["final_test"],
                      "final_val_s1": j["final_val_s1"], "final_test_s1": j["final_test_s1"],
                      "best_val": j["best_val"], "best_step": j["best_step"], "best_test": j["best_test"],
+                     **{k: j[k] for k in ("final_val_ref", "final_test_ref", "band", "eval_steps", "eval_steps_ref")
+                        if k in j},
                      "min_val": ev.val_solve.min(), "min_val_step": int(ev.step[ev.val_solve.idxmin()]),
                      "first_step_val_0.7": int(reach.iloc[0]) if len(reach) else -1,
                      "wall_clock_s": round(j["wall_clock_s_this_session"], 1), "torch": j["env"]["torch"],
