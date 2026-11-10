@@ -20,7 +20,7 @@ All arms: wd1, β = 1, τ = 1, floor −75.6, start and every other setting as i
 
 **Command**
 ```
-SEED=0 bash scripts/run_phase4.sh rl45a ~/dllm-cache/venv/bin/python   # also SEED=1, SEED=2
+for arm in ord batch both; do for s in 0 1 2; do SEED=$s bash scripts/run_phase4.sh rl45a-$arm ~/dllm-cache/venv/bin/python & done; wait; done
 PYTHONPATH=src python -m phase4.rl_analysis compact 4.5a && python -m phase4.rl_analysis evaluate 4.5a && python -m phase4.rl_analysis report 4.5a
 ```
 Hardware: Apple M5, 24 GB, macOS 27.0.1, torch 2.15.0, MPS, fp32. Logs and checkpoints in `~/dllm-cache/phase4/4.5a/`.
