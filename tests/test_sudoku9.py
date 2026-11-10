@@ -105,3 +105,18 @@ def test_generator_is_deterministic_and_clean():
             assert s.tobytes() not in seen
             seen.add(s.tobytes())
     assert stats["sizes"] == dict(train=60, val=10, test=10)
+
+
+def test_torch_validity_and_model_shapes_9x9():
+    import torch
+    from phase2.data import batch_validity
+    from phase2.model import TinyDLLM
+
+    sol = torch.tensor([EASY_SOL, EASY_SOL, EASY_SOL])
+    puz = torch.tensor([EASY, EASY, EASY])
+    sol[1, 0], sol[1, 1] = sol[1, 1].item(), sol[1, 0].item()   # breaks columns and the givens stay fine or not
+    sol[2, 2] = 9                                               # given 3 overwritten, row broken
+    assert batch_validity(sol, puz).tolist() == [True, False, False]
+    m = TinyDLLM(2, 32, 2, 0.0, pos_embedding="structured", grid_n=9)
+    assert m(torch.ones(2, 81, dtype=torch.long)).shape == (2, 81, 9)
+    assert m.rcb[2].view(9, 9)[4, 7].item() == 5 and m.rcb[2].view(9, 9)[8, 0].item() == 6

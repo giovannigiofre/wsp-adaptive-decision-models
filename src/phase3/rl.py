@@ -93,7 +93,7 @@ def sequential_cell_logp(model, puzzles: torch.Tensor, completions: torch.Tensor
     given = puzzles != 0
     shown = given if extra is None else given & ~extra
     out = torch.zeros(completions.shape, device=completions.device, dtype=torch.float32)
-    for i in range(16):
+    for i in range(completions.shape[1]):
         if not (~given[:, i]).any():
             continue
         visible = shown.clone()
@@ -279,7 +279,7 @@ def main():
             A, keep = advantages(r)
             row["frac_skipped"] = 1 - keep.float().mean().item()
             if keep.any():
-                Pk, Ok = P.view(B, G, 16)[keep].reshape(-1, 16), O.view(B, G, 16)[keep].reshape(-1, 16)
+                Pk, Ok = P.view(B, G, -1)[keep].reshape(-1, P.shape[1]), O.view(B, G, -1)[keep].reshape(-1, P.shape[1])
                 vk = valid[keep]
                 if kind == "weighted":
                     gw = WEIGHTED[rc["objective"]](r, **params)
@@ -288,7 +288,7 @@ def main():
                         extra = prompt_mask(Pk, p_mask)   # same single random draw as before
                         if sequential:
                             given = Pk != 0
-                            cl = (trajectory_cell_logp(model, Pk, Ok, CS.view(B, G, 16)[keep].reshape(-1, 16), extra)
+                            cl = (trajectory_cell_logp(model, Pk, Ok, CS.view(B, G, -1)[keep].reshape(-1, P.shape[1]), extra)
                                   if lik == "trajectory" else sequential_cell_logp(model, Pk, Ok, extra))
                             lp = (cl * (~given)).sum(1).view(-1, G)
                             logp = None

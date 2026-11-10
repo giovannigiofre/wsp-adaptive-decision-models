@@ -78,12 +78,32 @@ def build_datasets(cfg: dict, seed: int = 0) -> dict[str, PuzzleSet]:
             for i, (name, sols) in enumerate(splits.items())}
 
 
+_GROUPS: dict[tuple[int, str], torch.Tensor] = {}
+
+
+def groups_t(n: int, device) -> torch.Tensor:
+    """(3n, n) cell indices of the rows, columns and boxes of an n x n grid (n = 4 or 9)."""
+    key = (n, str(device))
+    if key not in _GROUPS:
+        if n == 4:
+            g = GROUPS_T
+        else:
+            b = int(round(n ** 0.5))
+            idx = torch.arange(n * n)
+            box = (idx // (n * b)) * b + (idx % n) // b
+            g = torch.stack([idx.view(n, n)[r] for r in range(n)] + [idx.view(n, n)[:, c] for c in range(n)]
+                            + [idx[box == k] for k in range(n)])
+        _GROUPS[key] = g.to(device)
+    return _GROUPS[key]
+
+
 def batch_validity(grid: torch.Tensor, puzzle: torch.Tensor) -> torch.Tensor:
-    """Vectorised `sudoku.validity`. grid, puzzle: (B, 16) digits. Returns (B,) bool."""
+    """Vectorised `sudoku.validity`. grid, puzzle: (B, n*n) digits, n = 4 or 9. Returns (B,) bool."""
     g = grid.long()
-    in_range = ((g >= 1) & (g <= 4)).all(1)
-    oh = torch.nn.functional.one_hot((g - 1).clamp(0, 3), 4)          # (B,16,4)
-    counts = oh[:, GROUPS_T.to(g.device)].sum(2)                        # (B,12,4)
+    n = int(round(g.shape[1] ** 0.5))
+    in_range = ((g >= 1) & (g <= n)).all(1)
+    oh = torch.nn.functional.one_hot((g - 1).clamp(0, n - 1), n)      # (B,L,n)
+    counts = oh[:, groups_t(n, g.device)].sum(2)                        # (B,3n,n)
     groups_ok = (counts == 1).all(2).all(1)
     givens_ok = ((puzzle == 0) | (puzzle == g)).all(1)
     return in_range & groups_ok & givens_ok
