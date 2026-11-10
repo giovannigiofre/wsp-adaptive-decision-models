@@ -1,0 +1,3 @@
+sampler_steps,n_puzzles,failed,wrong_cells,wrong_cells_per_failed_puzzle,wrong_at_first_error_step_mean,wrong_after_first_error_step_mean,share_of_wrong_cells_after_first_error_step,first_error_step_mean,first_step_wrong_cells_visible_conflict,first_step_wrong_cells_same_step_conflict,first_step_wrong_cells_no_conflict,failed_puzzles_with_visible_conflict,failed_puzzles_with_same_step_conflict,failed_puzzles_with_no_conflict,solved_but_not_stored_solution
+4,667,310,5065,16.3387,1.9032,14.4355,0.8835,0.6839,0.0,0.0831,0.9169,0.0,0.129,0.9484,0
+16,667,124,2637,21.2661,1.3226,19.9435,0.9378,3.871,0.0,0.0061,0.9939,0.0,0.0081,0.9919,0
