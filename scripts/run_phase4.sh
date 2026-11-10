@@ -38,6 +38,25 @@ main() {
                  rl45a-batch) $R rl.weights_over=batch ;;
                  rl45a-both)  $R rl.order_temp=0.05 rl.weights_over=batch ;;
                esac ;;
+    # 4.6c regime map for the push-down term (docs/RL_DLLM_DIRECTIONS.md, direction 2), one launch per arm,
+    # three seeds side by side. r1-r3: one change each against 4.4 / 4.5a. r4-r5: dense reward (uses labels).
+    # r6-r8: 2 sampler steps in rollouts and evaluation.
+    rl46-r1|rl46-r2|rl46-r3|rl46-r4|rl46-r5|rl46-r6|rl46-r7|rl46-r8)
+               local R="$PY -m phase3.rl --config configs/phase4_rl.yaml --exp 4.6c --seed ${SEED:?set SEED}"
+               case "$what" in
+                 rl46-r1) $R --set rl.weights_over=batch rl.objective_params.beta=0 ;;
+                 rl46-r2) $R --tag _mu1 --set rl.inner_steps=1 ;;
+                 rl46-r3) $R --tag _paperopt --set rl.lr=3e-6 rl.grad_clip=0.2 rl.weight_decay=0.1 ;;
+                 rl46-r4) $R --set rl.reward=cell_accuracy ;;
+                 rl46-r5) $R --set rl.reward=cell_accuracy rl.objective_params.beta=0 ;;
+                 rl46-r6) $R --tag _s2 --set rl.rollout_steps=2 ;;
+                 rl46-r7) $R --tag _s2 --set rl.rollout_steps=2 rl.objective_params.beta=0 ;;
+                 rl46-r8) $R --tag _s2 --set rl.rollout_steps=2 rl.objective=filtered ;;
+               esac ;;
+    # 4.6d what self-training learns (direction 4): the supervised objective on all puzzles / on solved ones
+    rl46-sup-all|rl46-sup-solved|rl46-sup-unsolved)
+               $PY -m phase3.rl --config configs/phase4_rl.yaml --exp 4.6d --seed "${SEED:?set SEED}" \
+                 --set rl.objective=supervised "rl.supervised_on=${what#rl46-sup-}" ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }

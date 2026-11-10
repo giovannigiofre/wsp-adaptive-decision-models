@@ -31,6 +31,11 @@ cached 9x9 sets, the start to the 4.1 plateau model and the cache to ~/dllm-cach
 adds a val solve rate at a second sampler budget (column val_solve_ref). Nothing else changes.
 
 PYTHONPATH=src python -m phase3.rl --config configs/phase4_rl.yaml --exp 4.4 --seed 0
+
+Phase 4.6 (regime map, docs/RL_DLLM_DIRECTIONS.md) adds three optional keys; without them nothing changes:
+`rl.reward: cell_accuracy` (dense reward, uses the stored solution), `rl.weight_decay`, and
+`rl.supervised_on: all | solved | unsolved` (the `supervised` objective on all sampled puzzles, or only on those
+with / without a valid rollout in their group). Runs that differ only in lr, clip, inner or rollout steps need a `--tag`.
 """
 from __future__ import annotations
 
@@ -56,7 +61,7 @@ from phase2.utils import CACHE as PHASE2_CACHE
 from phase2.utils import apply_overrides, env_record, get_device, load_cfg, seed_all
 
 from .objectives import KIND, WEIGHTED, advantages, grpo_loss, wd1_batch, weight_diagnostics, weighted_loss
-from .rewards import REWARDS
+from .rewards import REWARDS, cell_accuracy
 
 CACHE = Path(os.environ.get("PHASE3_CACHE", Path.home() / "dllm-cache" / "phase3"))
 FIELDS = ["step", "mean_reward", "mean_valid", "frac_skipped", "loss", "grad_norm", "w_entropy", "w_ess",
@@ -159,7 +164,8 @@ def run_name(rc: dict, seed: int, tag: str = "") -> str:
              f"refkl{rc['ref_kl']:g}" if rc.get("ref_kl", 0) else "",
              {"sequential": "seqlik", "trajectory": "trajlik"}.get(rc.get("likelihood", "onestep"), ""),
              f"ord{rc['order_temp']:g}" if rc.get("order_temp", 0) else "",
-             "batchw" if rc.get("weights_over", "group") == "batch" else "", f"seed{seed}{tag}"]
+             "batchw" if rc.get("weights_over", "group") == "batch" else "",
+             f"on{rc['supervised_on']}" if rc.get("supervised_on", "all") != "all" else "", f"seed{seed}{tag}"]
     return "_".join(p for p in parts if p)
 
 
@@ -198,7 +204,11 @@ def main():
         base["model"].update(base["sizes"][cfg["size"]])
         cache = cache_dir(base)
     rc = cfg["rl"]
-    kind, params, reward_fn = KIND[rc["objective"]], objective_params(rc), REWARDS[rc["reward"]]
+    dense = rc["reward"] == "cell_accuracy"                        # phase 4.6: needs the solution, so not in REWARDS
+    kind, params, reward_fn = KIND[rc["objective"]], objective_params(rc), None if dense else REWARDS[rc["reward"]]
+    sup_on = rc.get("supervised_on", "all")                        # phase 4.6: puzzle filter of `supervised`
+    if sup_on not in ("all", "solved", "unsolved"):
+        raise SystemExit(f"unknown rl.supervised_on {sup_on!r}")
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
     S_ref = rc.get("eval_steps_ref")                               # optional second sampler budget at evaluation
     if S_ref:
@@ -247,7 +257,7 @@ def main():
         for p in ref.parameters():
             p.requires_grad_(False)
     roll_model = MixedLogits(model, ref, ref_mix) if ref_mix else model
-    opt = torch.optim.AdamW(model.parameters(), lr=rc["lr"], weight_decay=0.0)
+    opt = torch.optim.AdamW(model.parameters(), lr=rc["lr"], weight_decay=rc.get("weight_decay", 0.0))
     log_path, state_path = out / f"{name}.csv", ck / "state.pt"
     t_min = base["diffusion_training"]["t_min"]
 
@@ -289,13 +299,18 @@ def main():
             ro = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"], order_temp=order_temp)
             O, CS = ro.grid, ro.commit_step
         valid = batch_validity(O, P).view(B, G)
-        r = reward_fn(O, P).view(B, G)
+        r = (cell_accuracy(O, P, train.solutions[idx].repeat_interleave(G, 0)) if dense else reward_fn(O, P)).view(B, G)
         row = {"step": step, "mean_reward": r.mean().item(), "mean_valid": valid.float().mean().item()}
         losses, norms = [], []
         if kind == "diffusion":   # SFT loss on own valid rollouts, or on the true solutions (uses labels)
             if rc["objective"] == "supervised":
                 Pt, Ot = P, train.solutions[idx].repeat_interleave(G, 0)
                 row["frac_skipped"] = 0.0
+                if sup_on != "all":                        # puzzles with (solved) or without (unsolved) a valid rollout
+                    solved = valid.any(1)
+                    sel = (solved if sup_on == "solved" else ~solved).repeat_interleave(G)
+                    Pt, Ot = Pt[sel], Ot[sel]
+                    row["frac_skipped"] = 1 - sel.float().mean().item()
             else:
                 sel = valid.view(-1)
                 Pt, Ot = P[sel], O[sel]
@@ -380,6 +395,8 @@ def main():
     summ = {"name": name, "objective": rc["objective"], "objective_params": params,
             "reward": rc["reward"], "ref_mix": ref_mix, "ref_kl": ref_kl,
             "likelihood": lik, "order_temp": order_temp, "weights_over": "batch" if batch_w else "group", "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
+            "inner_steps": mu, "grad_clip": rc["grad_clip"], "weight_decay": rc.get("weight_decay", 0.0),
+            "rollout_steps": S, "supervised_on": sup_on,
             "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,

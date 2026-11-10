@@ -106,7 +106,8 @@ def compact(exp: str, src: Path | None = None, dst: Path | None = None):
         cfg = {"run": j["name"], "objective": j["objective"], **j["objective_params"], "reward": j["reward"],
                "ref_mix": j.get("ref_mix", 0.0), "ref_kl": j.get("ref_kl", 0.0),
                "likelihood": j.get("likelihood", "onestep"), "tag": j.get("tag", ""),
-               "seed": j["seed"], **{k: j[k] for k in ("order_temp", "weights_over") if k in j}}
+               "seed": j["seed"], **{k: j[k] for k in ("order_temp", "weights_over", "inner_steps", "grad_clip", "weight_decay",
+                                                "rollout_steps", "supervised_on") if k in j}}
         curves.append(ev.merge(means, on="step", how="left").assign(**cfg))
         reach = ev.step[ev.val_solve >= 0.7]
         runs.append({**cfg, "steps": j["steps"], "lr": j["lr"], "init": Path(j["init"]).name,

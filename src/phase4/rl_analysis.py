@@ -304,7 +304,10 @@ def main():
     ap.add_argument("what", choices=["compact", "evaluate", "report", "factorial"])
     ap.add_argument("exp")
     ap.add_argument("--config", default="configs/phase4_rl.yaml")
+    ap.add_argument("--budgets", type=int, nargs="*", default=None, help="evaluate: sampler steps (default 4 16)")
     a = ap.parse_args()
+    if a.what == "evaluate" and a.budgets:
+        return evaluate(a.exp, a.config, tuple(a.budgets))
     {"compact": compact, "evaluate": evaluate, "report": report, "factorial": factorial}[a.what](a.exp, a.config)
 
 

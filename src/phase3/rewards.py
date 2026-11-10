@@ -33,5 +33,13 @@ def lenient(grid: torch.Tensor, puzzle: torch.Tensor) -> torch.Tensor:
     return (rows_cols_ok & givens_ok).float()
 
 
+def cell_accuracy(grid: torch.Tensor, puzzle: torch.Tensor, solution: torch.Tensor) -> torch.Tensor:
+    """Share of the hidden cells that equal the stored solution (phase 4.6). Unlike the rewards above it
+    uses the solution; this is the Sudoku reward of the wd1 paper (arXiv 2507.08838). Any board size.
+    Equals 1 exactly when the grid is the stored solution."""
+    hidden = puzzle == 0
+    return ((grid == solution) & hidden).sum(1).float() / hidden.sum(1).clamp_min(1)
+
+
 REWARDS: dict[str, Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {"binary": binary, "graded": graded,
                                                                             "lenient": lenient}
