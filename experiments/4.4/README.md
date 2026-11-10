@@ -27,7 +27,7 @@ bash scripts/run_phase4.sh rl44-h python          # horizon check: one wd1 run o
 ```
 ## Results (21 runs, 2026-11-10)
 
-Hardware: Apple M5, 24 GB, macOS 27.0.1, torch 2.15.0, MPS, fp32. Seeds 0, 1, 2. Wall-clock: 2 h 29 min for the 21 runs with three seeds side by side (16 to 28 minutes per run; one run alone takes about 7). This launch was estimated at 95 minutes and went over the 2-hour line; later launches are planned at 20 minutes per run. Files: `results/phase4/4.4/` (`curves.csv`, `runs.csv`, `per_seed.csv`, `summary.csv`, `paired.csv`, `test_solved.csv`, `predictions.json`, `objectives.png`, `diagnostics.png`), built by `python -m phase4.rl_analysis compact|evaluate|report 4.4`.
+Hardware: Apple M5, 24 GB, macOS 27.0.1, torch 2.15.0, MPS, fp32. Seeds 0, 1, 2. Wall-clock: 2 h 31 min (18:02 to 20:33) for the 21 runs with three seeds side by side (16 to 28 minutes per run; one run alone takes about 7). This launch was estimated at 95 minutes and went over the 2-hour line; later launches are planned at 20 minutes per run. Files: `results/phase4/4.4/` (`curves.csv`, `runs.csv`, `per_seed.csv`, `summary.csv`, `paired.csv`, `test_solved.csv`, `predictions.json`, `objectives.png`, `diagnostics.png`, `horizon_wd1.csv`), built by `python -m phase4.rl_analysis compact|evaluate|report 4.4`.
 
 Hard band, greedy `confidence` decoding. Start: val 0.521 and test 0.535 with 4 sampler steps, test 0.814 with 16. Mean over three seeds at step 500; the difference to the start is paired over the 667 hard test puzzles (seeds pooled, bootstrap over puzzles, so the interval does not include seed-to-seed variation; the seed standard deviation of test solve is 0.006 to 0.014).
 
@@ -61,3 +61,16 @@ Extra expectation (group-relative objectives have about a quarter of the effecti
 **What this shows:** on the 9×9 plateau model at 4 sampler steps, only pulling up valid rollouts helps (+5 to +7 points on hard test puzzles), pushing down invalid ones gives nothing even when bounded, and unbounded it hurts. Two of the four phase 3 claims carry over (2 and 4); the wd1 claim and the positive-only collapse do not.
 **What this does not show:** whether the push-down objectives fail because of the one-step likelihood estimate, the 4-step start or the settings carried over from 4×4 untuned (τ, lr, floor rule); whether more than 500 steps changes the order of the arms (horizon check below); anything about models that are not at a plateau.
 
+## Horizon check: plain wd1 for 1,000 steps (one seed)
+
+| RL step | val solve, 4 steps | val solve, 16 steps | valid rollouts | groups skipped | log p̂ of valid rollouts |
+|---|---|---|---|---|---|
+| 0 | 0.521 | 0.805 | - | - | - |
+| 250 | 0.515 | 0.790 | 0.578 | 0.836 | −61.7 |
+| 500 | 0.500 | 0.802 | 0.509 | 0.869 | −66.4 |
+| 750 | 0.482 | 0.770 | 0.495 | 0.925 | −76.1 |
+| 1,000 | 0.467 | 0.772 | 0.506 | 0.944 | −75.1 |
+
+Hard test at step 1,000: 0.480 at 4 steps and 0.775 at 16 (start 0.535 and 0.814). Run of 16 minutes, alone; `results/phase4/4.4/horizon_wd1.csv` (diagnostics are means over the 25 steps before each row).
+
+More steps do not turn plain wd1 around: it keeps going down, and by step 1,000 it gets a gradient from 6% of its groups. So the ranking of wd1 against the other arms at step 500 is not an effect of stopping early. One seed, and only this arm was extended, so it says nothing about whether the other arms would keep improving.

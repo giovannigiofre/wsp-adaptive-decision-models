@@ -3,6 +3,7 @@
     PYTHONPATH=src python -m phase4.rl_analysis compact 4.4    # local per-step logs -> curves.csv, runs.csv
     PYTHONPATH=src python -m phase4.rl_analysis evaluate 4.4   # final.pt of every run on the test set, per puzzle
     PYTHONPATH=src python -m phase4.rl_analysis report 4.4     # tables, figures, predictions (from committed files)
+    PYTHONPATH=src python -m phase4.rl_analysis factorial 4.5a # 4.5a: order x weights on floored wd1, against 4.4
 """
 from __future__ import annotations
 
@@ -31,6 +32,7 @@ FILT, SELF, GRPO = "filtered imitation", "self-training, SFT loss", "d1-style GR
 CONTRAST = [(WD1, C[0]), (FLOOR, C[2]), (KL, C[3]), (GRPO, C[4])]      # raise valid, lower invalid rollouts
 PUSH_UP = [(POS, C[1]), (FILT, C[5]), (SELF, "#7b4bb3")]   # not C[4]: GRPO has it and both are in one panel later                    # only raise (valid) rollouts
 ORDER = [WD1, FLOOR, KL, GRPO, POS, FILT, SELF]
+ORD, BATCH, BOTH = "floored + sampled order", "floored + batch weights", "floored + both"   # 4.5a
 
 
 def method(row) -> str:
@@ -225,13 +227,85 @@ def report(exp: str, config: str, steps: int = 500):
     print(json.dumps(pred, indent=1, ensure_ascii=False))
 
 
+def factorial(exp: str, config: str, ref_exp: str = "4.4", steps: int = 500):
+    """4.5a: floored wd1 with order (fixed / sampled) x weights (group / batch). The fixed, group cell and the
+    reference arms (filtered imitation, self-training) are read from the committed files of `ref_exp`."""
+    import matplotlib.pyplot as plt
+    rl, _ = _cfg(config)
+    band, S, S_ref = rl["band"], rl["rl"]["rollout_steps"], rl["rl"]["eval_steps_ref"]
+    out = OUT / exp
+    c0, r0 = load(ref_exp)
+    c0, r0 = c0[c0.tag == ""], r0[r0.tag == ""]
+    c, r = (pd.read_csv(out / f) for f in ("curves.csv", "runs.csv"))
+    name = lambda d: np.where(d.order_temp > 0, np.where(d.weights_over == "batch", BOTH, ORD), BATCH)  # noqa: E731
+    c["method"], r["method"] = name(c), name(r)
+    t0, t = pd.read_csv(OUT / ref_exp / "test_solved.csv"), pd.read_csv(out / "test_solved.csv")
+    assert (t0.puzzle == t.puzzle).all() and (t0["start|4"] == t["start|4"]).all(), "start model decodes differently"
+    hard0, hard = t0[t0.band == band], t[t.band == band]
+    start = {s: hard[f"start|{s}"].to_numpy() for s in (S, S_ref)}
+    arms = [(m, c0[c0.method == m], r0[r0.method == m], hard0) for m in (FLOOR, FILT, SELF)] + [
+        (m, c[c.method == m], r[r.method == m], hard) for m in (ORD, BATCH, BOTH)]
+    pp, rows = {}, []
+    for m, cc, rr, h in arms:
+        if rr.empty:
+            continue
+        pp[m] = {s: h[[f"{n}|{s}" for n in rr.run]].mean(axis=1).to_numpy() for s in (S, S_ref)}
+        early, late = cc[(cc.step > 0) & (cc.step <= 50)], cc[cc.step > steps - 50]
+        row = {"method": m, "n_seeds": len(rr), "val_mean": rr.final_val.mean(), "test_mean": rr.final_test.mean(),
+               "test_std": rr.final_test.std(), "test_ref_mean": rr.final_test_ref.mean(), "min_val": rr.min_val.min()}
+        for s, tag in ((S, "test"), (S_ref, "test_ref")):
+            row[f"{tag}_minus_start"], row[f"{tag}_minus_start_lo"], row[f"{tag}_minus_start_hi"] = _fmt_ci(pp[m][s] - start[s])
+        row.update(frac_skipped=cc.frac_skipped.mean(),
+                   frac_equal=cc.frac_equal.mean() if "frac_equal" in cc and cc.frac_equal.notna().any() else cc.frac_skipped.mean(),
+                   valid_rollouts_first50=early.mean_valid.mean(), valid_rollouts_last50=late.mean_valid.mean(),
+                   logp_valid_first50=early.logp_valid.mean(), logp_valid_last50=late.logp_valid.mean(),
+                   logp_invalid_first50=early.logp_invalid.mean(), logp_invalid_last50=late.logp_invalid.mean(),
+                   w_pos_on_invalid=cc.w_pos_on_invalid.mean(), wall_clock_min=rr.wall_clock_s.mean() / 60)
+        rows.append(row)
+    summ = pd.DataFrame(rows)
+    summ.round(4).to_csv(out / "summary.csv", index=False)
+    r[["method", "seed", "final_val", "final_test", "final_val_ref", "final_test_ref", "min_val", "min_val_step",
+       "best_val", "best_step", "wall_clock_s"]].sort_values(["method", "seed"]).round(4).to_csv(out / "per_seed.csv", index=False)
+    prow = []
+    for a, b in [(ORD, FLOOR), (BATCH, FLOOR), (BOTH, FLOOR), (BOTH, ORD), (BOTH, BATCH), (BATCH, FILT), (BOTH, FILT),
+                 (BATCH, SELF), (BOTH, SELF)]:
+        if a in pp and b in pp:
+            for s in (S, S_ref):
+                mean, lo, hi = _fmt_ci(pp[a][s] - pp[b][s])
+                prow.append({"a": a, "b": b, "sampler_steps": s, "a_minus_b": mean, "lo": lo, "hi": hi})
+    if all(m in pp for m in (ORD, BATCH, BOTH, FLOOR)):     # interaction: both - order - batch + neither
+        for s in (S, S_ref):
+            mean, lo, hi = _fmt_ci(pp[BOTH][s] - pp[ORD][s] - pp[BATCH][s] + pp[FLOOR][s])
+            prow.append({"a": "interaction (both − order − batch + neither)", "b": "", "sampler_steps": s,
+                         "a_minus_b": mean, "lo": lo, "hi": hi})
+    paired = pd.DataFrame(prow)
+    paired.round(4).to_csv(out / "paired.csv", index=False)
+
+    cols = {FLOOR: C[2], ORD: C[0], BATCH: C[1], BOTH: C[3]}
+    fig, ax = plt.subplots(1, 4, figsize=(16, 3.6))
+    panels = [("val_solve", f"val solve rate, {band} band (greedy, {S} steps)", float(c[c.step == 0].val_solve.mean())),
+              ("val_solve_ref", f"val solve rate with {S_ref} sampler steps", float(c[c.step == 0].val_solve_ref.mean())),
+              ("mean_valid", "share of valid sampled rollouts", None), ("logp_valid", "one-step log p̂ of valid rollouts", None)]
+    for a, (col, title, ref) in zip(ax, panels):
+        for m, cc, _, _ in arms:
+            if m in cols and len(cc):
+                A3.band(a, cc if col.startswith("val") else cc[cc.step > 0], col, cols[m], m)
+        if ref is not None:
+            a.axhline(ref, color="0.35", ls=":", lw=1.2, label="start (plateau model)")
+        a.set(title=title, xlabel="RL step")
+    ax[0].legend(fontsize=7, loc="best")
+    fig.tight_layout(); fig.savefig(out / "factorial.png", dpi=110); plt.close(fig)
+    pd.set_option("display.width", 250); pd.set_option("display.max_columns", 50)
+    print(summ.round(3).T.to_string()); print(paired.round(3).to_string(index=False))
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=["compact", "evaluate", "report"])
+    ap.add_argument("what", choices=["compact", "evaluate", "report", "factorial"])
     ap.add_argument("exp")
     ap.add_argument("--config", default="configs/phase4_rl.yaml")
     a = ap.parse_args()
-    {"compact": compact, "evaluate": evaluate, "report": report}[a.what](a.exp, a.config)
+    {"compact": compact, "evaluate": evaluate, "report": report, "factorial": factorial}[a.what](a.exp, a.config)
 
 
 if __name__ == "__main__":

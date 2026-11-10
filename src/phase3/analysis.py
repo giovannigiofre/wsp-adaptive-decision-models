@@ -85,7 +85,7 @@ def repro():
 
 
 WINDOW_COLS = ["mean_reward", "mean_valid", "frac_skipped", "loss", "grad_norm", "w_entropy", "w_ess",
-               "w_pos_on_invalid", "logp_valid", "logp_invalid", "pred_entropy", "clip_frac"]
+               "w_pos_on_invalid", "logp_valid", "logp_invalid", "pred_entropy", "clip_frac", "frac_equal"]
 
 
 def compact(exp: str, src: Path | None = None, dst: Path | None = None):
@@ -106,7 +106,7 @@ def compact(exp: str, src: Path | None = None, dst: Path | None = None):
         cfg = {"run": j["name"], "objective": j["objective"], **j["objective_params"], "reward": j["reward"],
                "ref_mix": j.get("ref_mix", 0.0), "ref_kl": j.get("ref_kl", 0.0),
                "likelihood": j.get("likelihood", "onestep"), "tag": j.get("tag", ""),
-               "seed": j["seed"]}
+               "seed": j["seed"], **{k: j[k] for k in ("order_temp", "weights_over") if k in j}}
         curves.append(ev.merge(means, on="step", how="left").assign(**cfg))
         reach = ev.step[ev.val_solve >= 0.7]
         runs.append({**cfg, "steps": j["steps"], "lr": j["lr"], "init": Path(j["init"]).name,
