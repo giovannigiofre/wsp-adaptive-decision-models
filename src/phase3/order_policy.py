@@ -49,7 +49,7 @@ def oracle_order(model, ps: PuzzleSet) -> dict[str, torch.Tensor]:
     B = len(ps)
     stuck_at = torch.full((B,), -1, device=grid.device)       # first step with no correct candidate
     n_candidates = []                                         # mean number of correct masked cells per step
-    for s in range(16):
+    for s in range(grid.shape[1]):
         active = masked.any(1)
         if not active.any():
             break
@@ -62,7 +62,7 @@ def oracle_order(model, ps: PuzzleSet) -> dict[str, torch.Tensor]:
         stuck_at = torch.where(active & ~has_ok & (stuck_at < 0), torch.full_like(stuck_at, s), stuck_at)
         score = torch.where(has_ok[:, None], conf.masked_fill(~ok, float("-inf")),
                             conf.masked_fill(~masked, float("-inf")))
-        commit = torch.nn.functional.one_hot(score.argmax(1), 16).bool() & active[:, None]
+        commit = torch.nn.functional.one_hot(score.argmax(1), grid.shape[1]).bool() & active[:, None]
         grid = torch.where(commit, pred, grid)
         masked = masked & ~commit
     return {"solved": batch_validity(grid, ps.puzzles).cpu(), "stuck_at": stuck_at.cpu(),

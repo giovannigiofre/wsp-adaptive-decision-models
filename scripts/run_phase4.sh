@@ -16,6 +16,7 @@ main() {
     # 4.1 training to the plateau; one launch stays under 2 hours and the next one resumes
     sft)       $PY -m phase4.train --name sft --size "${SIZE:?set SIZE=small|medium|large}" --launch-minutes 110 ;;
     sft-report) $PY -m phase4.analysis sft --size "${SIZE:-medium}" ;;
+    sampler)   $PY -m phase4.sampler_eval --size "${SIZE:-medium}" ;;   # 4.2, about 11 minutes
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
