@@ -61,9 +61,10 @@ def main():
     model = build_model(cfg).to(dev)
     model.load_state_dict(torch.load(cache_dir(cfg) / a.exp / a.name / "final.pt", map_location=dev)); model.eval()
     seed_all(0)
-    rows = []
+    rows, per = [], {"band": [names[b] for b in band.tolist()]}
     for N in a.budgets:
         ok = run_sampler(model, ps, N, "confidence", batch=1024)["solved"].float().numpy()
+        per[f"valid_{N}"] = ok.astype(int)
         for b, name in enumerate(names):
             v = ok[(band == b).numpy()]
             lo, hi = bootstrap_ci(v)
@@ -72,6 +73,7 @@ def main():
     out = Path("results/phase4") / a.exp
     out.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(rows).round(4).to_csv(out / f"{a.name}_valid_{a.split}.csv", index=False)
+    pd.DataFrame(per).to_csv(out / f"{a.name}_solved_{a.split}.csv", index_label="puzzle")
 
 
 if __name__ == "__main__":
