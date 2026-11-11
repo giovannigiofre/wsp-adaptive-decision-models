@@ -57,6 +57,10 @@ main() {
     rl46-sup-all|rl46-sup-solved|rl46-sup-unsolved)
                $PY -m phase3.rl --config configs/phase4_rl.yaml --exp 4.6d --seed "${SEED:?set SEED}" \
                  --set rl.objective=supervised "rl.supervised_on=${what#rl46-sup-}" ;;
+    # 4.8a cold start with no stored solutions (docs/SELF_LEARNING_FROM_CHECKER.md, stage A1): 60 min on masked givens
+    self-a1)   $PY -m phase4.train --name a1 --size medium --loss givens --max-minutes 60 --no-plateau \
+                 --out results/phase4/4.8a --ckpt-dir ~/dllm-cache/phase4/4.8a/a1
+               $PY -m phase4.selflearn --name a1 ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }

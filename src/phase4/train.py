@@ -54,6 +54,8 @@ def main():
     ap.add_argument("--max-minutes", type=float, default=None, help="total training budget over all launches")
     ap.add_argument("--launch-minutes", type=float, default=None, help="stop this launch after this long (resume later)")
     ap.add_argument("--no-plateau", action="store_true")
+    ap.add_argument("--loss", default="diffusion", choices=["diffusion", "givens"],
+                    help="givens (step 4.8): train on masked givens only, stored solutions of the train set zeroed")
     ap.add_argument("--max-steps", type=int, default=None)
     ap.add_argument("--device", default=None)
     ap.add_argument("--out", default="results/phase4/sft")
@@ -76,6 +78,20 @@ def main():
 
     sets, bands, names = load_sets(cfg, dev, ("train", "val"))
     train, val = sets["train"], sets["val"]
+    loss_fn = lambda ps, gen=None: diffusion_loss(model, ps, tc["t_min"], gen)          # noqa: E731
+    val_loss = lambda: eval_loss(model, val, tc["t_min"])                              # noqa: E731
+    if a.loss == "givens":
+        from .selflearn import givens_loss, without_solutions
+        train = without_solutions(train)
+        loss_fn = lambda ps, gen=None: givens_loss(model, ps.puzzles, tc["t_min"], gen)  # noqa: E731
+
+        @torch.no_grad()
+        def val_loss(reps: int = 4) -> float:
+            model.eval()
+            gen = torch.Generator(device=dev).manual_seed(123)
+            v = sum(loss_fn(val, gen).item() for _ in range(reps)) / reps
+            model.train()
+            return v
     fields = FIELDS[:4] + [f"val_solve_{n}" for n in names] + FIELDS[4:]
     seed_all(tc["seed"])
     model = build_model(cfg).to(dev)
@@ -104,7 +120,7 @@ def main():
     while reason is None:
         step += 1
         idx = torch.randint(0, len(train), (tc["batch_size"],), device=dev)
-        loss = diffusion_loss(model, train.subset(idx), tc["t_min"])
+        loss = loss_fn(train.subset(idx))
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), tc["grad_clip"])
@@ -118,7 +134,7 @@ def main():
         pause = a.launch_minutes and time.time() - t0 >= a.launch_minutes * 60
         if not (reason or pause or step in dense or step % tc["eval_every"] == 0):
             continue
-        row = {"step": step, "train_loss": run_loss / n_loss, "val_loss": eval_loss(model, val, tc["t_min"]),
+        row = {"step": step, "train_loss": run_loss / n_loss, "val_loss": val_loss(),
                **band_eval(model, val, bands["val"], names, tc["eval_sampler_steps"], tc["eval_strategy"]),
                "lr": sched.get_last_lr()[0], "elapsed_s": elapsed}
         run_loss, n_loss = 0.0, 0
@@ -141,7 +157,7 @@ def main():
     torch.save(model.state_dict(), ck / "final.pt")
     json.dump({"name": a.name, "stop_reason": reason, "final_step": step, "best_val_loss": best[1], "best_val_loss_step": best[0],
                "final": row, "n_params": n_params(model), "model": cfg["model"], "wall_clock_s": elapsed, "overrides": a.set,
-               "size": a.size, "seed": tc["seed"], "env": env_record(dev), "ckpt_dir": str(ck)}, open(done_path, "w"), indent=1)
+               "size": a.size, "loss": a.loss, "seed": tc["seed"], "env": env_record(dev), "ckpt_dir": str(ck)}, open(done_path, "w"), indent=1)
     print(f"finished {a.name}: {reason} at step {step}", flush=True)
 
 
