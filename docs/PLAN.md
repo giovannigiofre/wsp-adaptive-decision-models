@@ -46,6 +46,19 @@ Spec: [PHASE3_RL_PLAYGROUND.md](PHASE3_RL_PLAYGROUND.md). Added after phases 1 a
 
 Three follow-ups were added during the phase, each with its own pre-registered prediction: 3.2b (KL penalty to the start), 3.1g (the better variants from other starting models), 3.3b (the confidence token on a frozen model). Three robustness checks were added after the summary, also with predictions: 3.6a (sequential likelihood in the loss), 3.6b (rarer reward, weaker checker), 3.6c (likelihood along the rollout's own path).
 
+## Phase 4: a 9×9 Sudoku dLLM and the phase 3 objectives again (training)
+Spec: [PHASE4_SUDOKU9_DLLM.md](PHASE4_SUDOKU9_DLLM.md). Added after phase 3 to see which of its conclusions survive a harder task.
+
+| Step | Output |
+|---|---|
+| 4.0 9×9 generator, uniqueness check, difficulty bands, and a data report that gates training | `src/phase4/generate.py` + tests, `results/phase4/data_report.md` |
+| 4.1 Size check, then masked diffusion training to a plateau | checkpoint (local only) + training curve |
+| 4.2 Sampler strategies × step budgets, order headroom, calibration | tables + plots per difficulty band |
+| 4.3 Choose the RL start by a rule fixed in the spec | share of valid rollouts at the start |
+| 4.4 The seven phase 3 objectives at their phase 3 settings | comparison plot + table, predictions checked |
+| 4.5 Settings sweeps: screen with one seed, confirm with three | per-arm table of settings tried |
+| 4.7 Write-up | `results/phase4/SUMMARY.md`, reports updated |
+
 ## Final deliverable
 - Clean repo with reproducible commands per experiment.
 - `results/REPORT.md`: 2–4 pages, 4–6 figures, what I learned, what surprised me, limitations.

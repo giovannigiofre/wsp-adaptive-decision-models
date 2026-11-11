@@ -1,0 +1,11 @@
+sampler_steps,score,wrong_cells,auroc_all_cells,auroc_failed_grids,flag_recall_of_wrong,flag_precision,failed_grids_with_a_flag
+4,commit_conf,5065,0.5823,0.4931,,,
+4,visible_prob,5065,0.6228,0.5773,,,
+4,leave_out_prob,5065,0.6876,0.6137,,,
+4,no_conflict,5065,0.6106,0.5893,,,
+4,conflict_flag,5065,,,0.2476,0.6081,1.0
+16,commit_conf,2637,0.5793,0.4071,,,
+16,visible_prob,2637,0.59,0.5377,,,
+16,leave_out_prob,2637,0.6389,0.5529,,,
+16,no_conflict,2637,0.5668,0.5468,,,
+16,conflict_flag,2637,,,0.1392,0.6637,1.0

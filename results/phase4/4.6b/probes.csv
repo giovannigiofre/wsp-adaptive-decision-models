@@ -1,0 +1,9 @@
+fill_steps,pass,inputs,train_cells,wrong_share_test,auroc_all_cells,auroc_failed_grids,recall_rho,false_alarm_phi
+3,visible,features+probs,160289,0.1674,0.7545,0.6361,0.6005,0.2204
+3,visible,probs only,160289,0.1674,0.5423,0.5316,0.2564,0.2317
+3,leave_out,features+probs,160289,0.1674,0.763,0.6394,0.5764,0.1925
+3,leave_out,probs only,160289,0.1674,0.611,0.5865,0.2126,0.0309
+6,visible,features+probs,160289,0.1171,0.7602,0.594,0.6184,0.2132
+6,visible,probs only,160289,0.1171,0.5326,0.5241,0.4689,0.446
+6,leave_out,features+probs,160289,0.1171,0.7729,0.598,0.5995,0.1741
+6,leave_out,probs only,160289,0.1171,0.585,0.5607,0.149,0.0115

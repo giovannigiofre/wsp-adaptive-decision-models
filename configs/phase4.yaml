@@ -1,0 +1,51 @@
+phase: 4
+seeds: [0, 1, 2]
+data:
+  cache_dir: ~/dllm-cache/phase4
+  seed: 0
+  # hidden cells per band, fixed after measuring yield (experiments/4.0): up to k = 56 a random removal
+  # order reaches k with a unique solution in ~90% of attempts; at k = 58 in ~20%, at k = 60 never in 200.
+  bands:
+    easy: [30, 40]
+    medium: [41, 50]
+    hard: [51, 56]
+  # puzzles per band; k is uniform inside the band; every puzzle has its own solution grid
+  per_band:
+    train: 33334
+    val: 334
+    test: 667
+  max_tries_per_solution: 20   # new removal orders tried on a grid before drawing a new grid
+  chunk: 1000                  # puzzles per worker task; each chunk has its own seed, so results do not depend on workers
+  workers: 4
+model:
+  grid_n: 9
+  # default = the 1.86M model; the 4.1 size check also runs sizes.small and decides by the rule in the spec
+  n_layers: 6
+  d_model: 160
+  n_heads: 4
+  dropout: 0.1
+  pos_embedding: structured
+sizes:
+  small: {n_layers: 4, d_model: 128, n_heads: 4}    # 0.8M, the phase 2 model
+  medium: {n_layers: 6, d_model: 160, n_heads: 4}   # 1.86M
+  large: {n_layers: 8, d_model: 256, n_heads: 4}    # 6.3M, only if the rule in the spec asks for it
+diffusion_training:
+  t_min: 0.05
+  loss_weight: inverse_t
+  batch_size: 256
+  lr: 3.0e-4
+  # warm-up then constant: the stopping step is not known in advance (plateau rule), so no cosine as in phase 2
+  warmup_steps: 500
+  weight_decay: 0.01
+  grad_clip: 1.0
+  max_steps: 50000
+  eval_every: 500
+  dense_eval_until: 1000
+  dense_eval_every: 100
+  eval_strategy: confidence
+  eval_sampler_steps: 16
+  plateau_window: 5000        # stop when the best val loss of the last 5,000 steps is not 1% below the best before
+  plateau_rel_improvement: 0.01
+  seed: 0
+runtime:
+  device: mps

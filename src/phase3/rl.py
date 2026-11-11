@@ -25,6 +25,17 @@ local cache and `python -m phase3.analysis compact ID` writes one row per evalua
 PYTHONPATH=src python -m phase3.rl --seed 0
 PYTHONPATH=src python -m phase3.rl --seed 0 --set rl.objective_params.beta=0
 PYTHONPATH=src python -m phase3.rl --seed 0 --exp 3.2 --set rl.objective=reinforce
+
+Phase 4: a config with `task: sudoku9` (configs/phase4_rl.yaml) switches the data to one difficulty band of the
+cached 9x9 sets, the start to the 4.1 plateau model and the cache to ~/dllm-cache/phase4; `rl.eval_steps_ref`
+adds a val solve rate at a second sampler budget (column val_solve_ref). Nothing else changes.
+
+PYTHONPATH=src python -m phase3.rl --config configs/phase4_rl.yaml --exp 4.4 --seed 0
+
+Phase 4.6 (regime map, docs/RL_DLLM_DIRECTIONS.md) adds three optional keys; without them nothing changes:
+`rl.reward: cell_accuracy` (dense reward, uses the stored solution), `rl.weight_decay`, and
+`rl.supervised_on: all | solved | unsolved` (the `supervised` objective on all sampled puzzles, or only on those
+with / without a valid rollout in their group). Runs that differ only in lr, clip, inner or rollout steps need a `--tag`.
 """
 from __future__ import annotations
 
@@ -49,8 +60,8 @@ from phase2.train_diffusion import diffusion_loss
 from phase2.utils import CACHE as PHASE2_CACHE
 from phase2.utils import apply_overrides, env_record, get_device, load_cfg, seed_all
 
-from .objectives import KIND, WEIGHTED, advantages, grpo_loss, weight_diagnostics, weighted_loss
-from .rewards import REWARDS
+from .objectives import KIND, WEIGHTED, advantages, grpo_loss, wd1_batch, weight_diagnostics, weighted_loss
+from .rewards import REWARDS, cell_accuracy
 
 CACHE = Path(os.environ.get("PHASE3_CACHE", Path.home() / "dllm-cache" / "phase3"))
 FIELDS = ["step", "mean_reward", "mean_valid", "frac_skipped", "loss", "grad_norm", "w_entropy", "w_ess",
@@ -93,7 +104,7 @@ def sequential_cell_logp(model, puzzles: torch.Tensor, completions: torch.Tensor
     given = puzzles != 0
     shown = given if extra is None else given & ~extra
     out = torch.zeros(completions.shape, device=completions.device, dtype=torch.float32)
-    for i in range(16):
+    for i in range(completions.shape[1]):
         if not (~given[:, i]).any():
             continue
         visible = shown.clone()
@@ -124,6 +135,38 @@ def trajectory_cell_logp(model, puzzles: torch.Tensor, completions: torch.Tensor
     return out
 
 
+def exact_trajectory_logp(model, puzzles: torch.Tensor, completions: torch.Tensor, commit_step: torch.Tensor,
+                          dtype=torch.float32) -> torch.Tensor:
+    """(N,) exact log-probability of a rollout of `phase2.sampler.sample` with strategy `confidence`,
+    temperature 1 and order_temp 0 (phase 4.6a, docs/RL_DLLM_DIRECTIONS.md direction 1).
+
+    The sampler draws a digit for every masked cell and commits the k cells whose *drawn* digit has the highest
+    probability. So one step with commit set C, values v and m = min_{i in C} p_i(v_i) has probability
+        prod_{i in C} p_i(v_i)  *  prod_{j masked, not in C} sum_{c: p_j(c) < m} p_j(c),
+    where the second product says that the draw of every cell left masked scored below the committed ones.
+    `trajectory_cell_logp` is the first product only. One forward pass per sampler step, with gradient; the
+    sets {c: p_j(c) < m} are constants of the gradient (they change only where two probabilities cross, and
+    there the probability of a single trajectory jumps). Ties are ignored. Checked against enumeration in
+    tests/test_phase4_exact_logp.py."""
+    given = puzzles != 0
+    out = torch.zeros(len(puzzles), device=completions.device, dtype=dtype)
+    for s in range(int(commit_step.max().item()) + 1):
+        now = ~given & (commit_step == s)
+        if not now.any():
+            continue
+        later = ~given & (commit_step > s)
+        visible = given | (~given & (commit_step >= 0) & (commit_step < s))
+        inp = torch.where(visible, completions, torch.zeros_like(completions))
+        logp = F.log_softmax(model(digits_to_tokens(inp)).to(dtype), -1)
+        lp = cell_logp(logp, completions)
+        out = out + (lp * now).sum(1)
+        if later.any():
+            m = lp.detach().masked_fill(~now, float("inf")).min(1).values
+            below = logp.detach() < m[:, None, None]
+            out = out + ((logp.exp() * below).sum(-1).clamp_min(1e-30).log() * later).sum(1)
+    return out
+
+
 def predictive_entropy(logp: torch.Tensor, given: torch.Tensor) -> torch.Tensor:
     """Mean entropy (nats, max ln 4) of the one-step predictive distribution over non-given cells."""
     ent = -(logp.exp() * logp).sum(-1)
@@ -151,7 +194,10 @@ def run_name(rc: dict, seed: int, tag: str = "") -> str:
     parts = [rc["objective"], params, "" if rc["reward"] == "binary" else rc["reward"],
              f"ref{rc['ref_mix']:g}" if rc.get("ref_mix", 0) else "",
              f"refkl{rc['ref_kl']:g}" if rc.get("ref_kl", 0) else "",
-             {"sequential": "seqlik", "trajectory": "trajlik"}.get(rc.get("likelihood", "onestep"), ""), f"seed{seed}{tag}"]
+             {"sequential": "seqlik", "trajectory": "trajlik"}.get(rc.get("likelihood", "onestep"), ""),
+             f"ord{rc['order_temp']:g}" if rc.get("order_temp", 0) else "",
+             "batchw" if rc.get("weights_over", "group") == "batch" else "",
+             f"on{rc['supervised_on']}" if rc.get("supervised_on", "all") != "all" else "", f"seed{seed}{tag}"]
     return "_".join(p for p in parts if p)
 
 
@@ -183,19 +229,38 @@ def main():
     a = ap.parse_args()
     cfg = apply_overrides(load_cfg(a.config), a.set)
     base = load_cfg(cfg["base_config"])
+    p4 = cfg.get("task") == "sudoku9"                              # phase 4: 9x9 data, plateau model, own cache
+    cache, fields = CACHE, FIELDS
+    if p4:
+        from phase4.generate import cache_dir
+        base["model"].update(base["sizes"][cfg["size"]])
+        cache = cache_dir(base)
     rc = cfg["rl"]
-    kind, params, reward_fn = KIND[rc["objective"]], objective_params(rc), REWARDS[rc["reward"]]
+    dense = rc["reward"] == "cell_accuracy"                        # phase 4.6: needs the solution, so not in REWARDS
+    kind, params, reward_fn = KIND[rc["objective"]], objective_params(rc), None if dense else REWARDS[rc["reward"]]
+    sup_on = rc.get("supervised_on", "all")                        # phase 4.6: puzzle filter of `supervised`
+    if sup_on not in ("all", "solved", "unsolved"):
+        raise SystemExit(f"unknown rl.supervised_on {sup_on!r}")
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
+    S_ref = rc.get("eval_steps_ref")                               # optional second sampler budget at evaluation
+    if S_ref:
+        fields = FIELDS + ["val_solve_ref"]
     mu, p_mask, ref_mix = rc["inner_steps"], rc["prompt_mask_prob"], rc.get("ref_mix", 0.0)
     ref_kl = rc.get("ref_kl", 0.0) if kind == "weighted" else 0.0
     lik = rc.get("likelihood", "onestep")                          # weighted objectives only
     if lik not in ("onestep", "sequential", "trajectory"):
         raise SystemExit(f"unknown rl.likelihood {lik!r}")
     sequential = lik != "onestep"                                  # chain-rule estimates: no one-step logp
+    order_temp = rc.get("order_temp", 0.0)                         # phase 4.5a: sampled unmasking order in rollouts
+    batch_w = rc.get("weights_over", "group") == "batch"           # phase 4.5a: wd1 weights over the whole batch
+    if batch_w and rc["objective"] != "wd1":
+        raise SystemExit("rl.weights_over=batch is defined for wd1 only")
+    if batch_w or order_temp:
+        fields = fields + ["frac_equal"]
     dev = get_device(a.device or base["runtime"]["device"])
     name = run_name(rc, a.seed, a.tag)
     if a.exp:
-        a.out, a.ckpt_dir = str(CACHE / a.exp / "logs"), str(CACHE / a.exp / "ckpt")
+        a.out, a.ckpt_dir = str(cache / a.exp / "logs"), str(cache / a.exp / "ckpt")
     out, ck = Path(a.out), Path(a.ckpt_dir) / name
     if (out / f"{name}.json").exists() and not a.force:
         print(f"skip {name}: already finished", flush=True)
@@ -203,12 +268,17 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     ck.mkdir(parents=True, exist_ok=True)
 
-    init = Path(a.init) if a.init else PHASE2_CACHE / cfg["init"]["checkpoint"]
+    init = Path(a.init) if a.init else (cache if p4 else PHASE2_CACHE) / cfg["init"]["checkpoint"]
     init_hash = sha256(init)
     if a.init is None and init_hash != cfg["init"]["sha256"]:
         raise SystemExit(f"{init} does not match the sha256 pinned in {a.config}")
 
-    ds = {k: v.to(dev) for k, v in build_datasets(base, base["data"].get("split_seed", 0)).items()}
+    if p4:
+        from phase4.data import load_sets
+        sets, bands, names = load_sets(base, dev)
+        ds = {k: sets[k].subset((bands[k] == names.index(cfg["band"])).to(dev)) for k in sets}
+    else:
+        ds = {k: v.to(dev) for k, v in build_datasets(base, base["data"].get("split_seed", 0)).items()}
     train, val, test = ds["train"], ds["val"], ds["test"]
     model = build_model(base).to(dev)
     model.load_state_dict(torch.load(init, map_location=dev))
@@ -219,7 +289,7 @@ def main():
         for p in ref.parameters():
             p.requires_grad_(False)
     roll_model = MixedLogits(model, ref, ref_mix) if ref_mix else model
-    opt = torch.optim.AdamW(model.parameters(), lr=rc["lr"], weight_decay=0.0)
+    opt = torch.optim.AdamW(model.parameters(), lr=rc["lr"], weight_decay=rc.get("weight_decay", 0.0))
     log_path, state_path = out / f"{name}.csv", ck / "state.pt"
     t_min = base["diffusion_training"]["t_min"]
 
@@ -249,24 +319,30 @@ def main():
         best = (v8, 0)
         torch.save(model.state_dict(), ck / "best.pt")
         with open(log_path, "w", newline="") as f:
-            w = csv.DictWriter(f, FIELDS)
+            w = csv.DictWriter(f, fields)
             w.writeheader()
-            w.writerow({"step": 0, "val_solve": v8, "val_solve_s1": v1, "elapsed_s": 0.0})
+            w.writerow({"step": 0, "val_solve": v8, "val_solve_s1": v1, "elapsed_s": 0.0,
+                        **({"val_solve_ref": solve_rate(model, val, S_ref, "confidence")} if S_ref else {})})
     t0 = time.time()
     for step in range(start, steps + 1):
         idx = torch.randint(0, len(train), (B,), device=dev)
         P = train.puzzles[idx].repeat_interleave(G, 0)
         with torch.no_grad():
-            ro = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"])
+            ro = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"], order_temp=order_temp)
             O, CS = ro.grid, ro.commit_step
         valid = batch_validity(O, P).view(B, G)
-        r = reward_fn(O, P).view(B, G)
+        r = (cell_accuracy(O, P, train.solutions[idx].repeat_interleave(G, 0)) if dense else reward_fn(O, P)).view(B, G)
         row = {"step": step, "mean_reward": r.mean().item(), "mean_valid": valid.float().mean().item()}
         losses, norms = [], []
         if kind == "diffusion":   # SFT loss on own valid rollouts, or on the true solutions (uses labels)
             if rc["objective"] == "supervised":
                 Pt, Ot = P, train.solutions[idx].repeat_interleave(G, 0)
                 row["frac_skipped"] = 0.0
+                if sup_on != "all":                        # puzzles with (solved) or without (unsolved) a valid rollout
+                    solved = valid.any(1)
+                    sel = (solved if sup_on == "solved" else ~solved).repeat_interleave(G)
+                    Pt, Ot = Pt[sel], Ot[sel]
+                    row["frac_skipped"] = 1 - sel.float().mean().item()
             else:
                 sel = valid.view(-1)
                 Pt, Ot = P[sel], O[sel]
@@ -277,18 +353,22 @@ def main():
                     norms.append(update(loss)); losses.append(loss.item())
         else:
             A, keep = advantages(r)
+            if batch_w or order_temp:
+                row["frac_equal"] = 1 - keep.float().mean().item()   # groups with equal rewards, used or not
+            if batch_w:                                    # every group is used, also those with equal rewards
+                keep = torch.ones_like(keep)
             row["frac_skipped"] = 1 - keep.float().mean().item()
             if keep.any():
-                Pk, Ok = P.view(B, G, 16)[keep].reshape(-1, 16), O.view(B, G, 16)[keep].reshape(-1, 16)
+                Pk, Ok = P.view(B, G, -1)[keep].reshape(-1, P.shape[1]), O.view(B, G, -1)[keep].reshape(-1, P.shape[1])
                 vk = valid[keep]
                 if kind == "weighted":
-                    gw = WEIGHTED[rc["objective"]](r, **params)
+                    gw = wd1_batch(r, **params) if batch_w else WEIGHTED[rc["objective"]](r, **params)
                     gw.pos, gw.neg = gw.pos[keep], gw.neg[keep]
                     for _ in range(mu):
                         extra = prompt_mask(Pk, p_mask)   # same single random draw as before
                         if sequential:
                             given = Pk != 0
-                            cl = (trajectory_cell_logp(model, Pk, Ok, CS.view(B, G, 16)[keep].reshape(-1, 16), extra)
+                            cl = (trajectory_cell_logp(model, Pk, Ok, CS.view(B, G, -1)[keep].reshape(-1, P.shape[1]), extra)
                                   if lik == "trajectory" else sequential_cell_logp(model, Pk, Ok, extra))
                             lp = (cl * (~given)).sum(1).view(-1, G)
                             logp = None
@@ -328,6 +408,8 @@ def main():
             row.update(loss=sum(losses) / len(losses), grad_norm=sum(norms) / len(norms))
         if step % rc["eval_every"] == 0 or step == steps:
             row["val_solve"], row["val_solve_s1"] = evaluate(val)
+            if S_ref:
+                row["val_solve_ref"] = solve_rate(model, val, S_ref, "confidence")
             if row["val_solve"] > best[0]:
                 best = (row["val_solve"], step)
                 torch.save(model.state_dict(), ck / "best.pt")
@@ -338,18 +420,25 @@ def main():
                   f"val={row['val_solve']:.3f} val_s1={row['val_solve_s1']:.3f}", flush=True)
         row["elapsed_s"] = time.time() - t0
         with open(log_path, "a", newline="") as f:
-            csv.DictWriter(f, FIELDS).writerow(row)
+            csv.DictWriter(f, fields).writerow(row)
     torch.save(model.state_dict(), ck / "final.pt")
     final_val, final_val_s1 = evaluate(val)
     final_test, final_test_s1 = evaluate(test)
     summ = {"name": name, "objective": rc["objective"], "objective_params": params,
             "reward": rc["reward"], "ref_mix": ref_mix, "ref_kl": ref_kl,
-            "likelihood": lik, "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
+            "likelihood": lik, "order_temp": order_temp, "weights_over": "batch" if batch_w else "group", "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
+            "inner_steps": mu, "grad_clip": rc["grad_clip"], "weight_decay": rc.get("weight_decay", 0.0),
+            "rollout_steps": S, "supervised_on": sup_on,
             "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,
             "final_val_s1": final_val_s1, "final_test_s1": final_test_s1,
             "wall_clock_s_this_session": time.time() - t0, "env": env_record(dev)}
+    if S_ref:
+        summ.update(eval_steps=S, eval_steps_ref=S_ref, final_val_ref=solve_rate(model, val, S_ref, "confidence"),
+                    final_test_ref=solve_rate(model, test, S_ref, "confidence"))
+    if p4:
+        summ.update(band=cfg["band"], n_train=len(train), n_val=len(val), n_test=len(test))
     model.load_state_dict(torch.load(ck / "best.pt", map_location=dev))
     summ["best_test"] = solve_rate(model, test, S, "confidence")
     json.dump(summ, open(out / f"{name}.json", "w"), indent=2)

@@ -1,0 +1,53 @@
+{
+ "arm": "harvest",
+ "rounds": 10,
+ "final_step": 19546,
+ "start_step": 9546,
+ "final": {
+  "round": 10,
+  "step": 19546,
+  "train_loss": 0.17375212448835373,
+  "tried": 2241,
+  "accepted": 278,
+  "buffer_easy": 1.0,
+  "buffer_medium": 0.998680055141449,
+  "buffer_hard": 0.9424311518669128,
+  "val_solve_easy": 1.0,
+  "val_solve_medium": 0.985029935836792,
+  "val_solve_hard": 0.667664647102356,
+  "val4_solve_easy": 1.0,
+  "val4_solve_medium": 0.916167676448822,
+  "val4_solve_hard": 0.36227545142173767,
+  "val_cell_acc": 0.9475995302200317,
+  "elapsed_s": 5142.726695775986
+ },
+ "wall_clock_s": 5142.726695775986,
+ "args": {
+  "config": "configs/phase4.yaml",
+  "size": "medium",
+  "arm": "harvest",
+  "exp": "4.8c",
+  "name": "harvest_s1",
+  "init": "4.8a/a1/state.pt",
+  "rounds": 10,
+  "round_steps": 1000,
+  "harvest_steps": 16,
+  "harvest_block": 15000,
+  "givens_share": 0.25,
+  "launch_minutes": 100.0,
+  "device": null,
+  "set": [
+   "diffusion_training.seed=1"
+  ]
+ },
+ "seed": 1,
+ "env": {
+  "python": "3.12.13",
+  "torch": "2.15.0",
+  "device": "mps",
+  "machine": "arm64",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "torch_threads": 4
+ },
+ "ckpt_dir": "/Users/giovannigiofre/dllm-cache/phase4/4.8c/harvest_s1"
+}

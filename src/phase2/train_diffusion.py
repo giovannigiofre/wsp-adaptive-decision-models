@@ -29,10 +29,11 @@ def diffusion_loss(model, ps: PuzzleSet, t_min: float, gen: torch.Generator | No
     B = x0.shape[0]
     dev = x0.device
     t = t_min + (1 - t_min) * torch.rand(B, 1, device=dev, generator=gen)
-    mask = (~given) & (torch.rand(B, 16, device=dev, generator=gen) < t)
+    L = x0.shape[1]
+    mask = (~given) & (torch.rand(B, L, device=dev, generator=gen) < t)
     logits = model(digits_to_tokens(torch.where(mask, torch.zeros_like(x0), x0)))
-    ce = F.cross_entropy(logits.reshape(-1, 4), (x0 - 1).reshape(-1), reduction="none").view(B, 16)
-    return ((ce * mask).sum(1) / t.squeeze(1) / 16).mean()
+    ce = F.cross_entropy(logits.reshape(-1, logits.shape[-1]), (x0 - 1).reshape(-1), reduction="none").view(B, L)
+    return ((ce * mask).sum(1) / t.squeeze(1) / L).mean()
 
 
 @torch.no_grad()

@@ -1,0 +1,14 @@
+{
+ "ckpt": "/Users/giovannigiofre/dllm-cache/phase4/sft/sft/final.pt",
+ "split": "test",
+ "n": 2001,
+ "wall_clock_s": 650.7025139331818,
+ "env": {
+  "python": "3.12.13",
+  "torch": "2.15.0",
+  "device": "mps",
+  "machine": "arm64",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "torch_threads": 4
+ }
+}

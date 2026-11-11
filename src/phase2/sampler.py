@@ -43,6 +43,12 @@ def select_topk(scores: torch.Tensor, masked: torch.Tensor, k: torch.Tensor) -> 
     return (rank < k.unsqueeze(1)) & masked
 
 
+def gumbel_like(x: torch.Tensor) -> torch.Tensor:
+    """Standard Gumbel noise with the shape of x (phase 4, sampled unmasking order)."""
+    e = (-torch.log(torch.rand_like(x).clamp_min(1e-12))).clamp_min(1e-12)   # Exp(1), kept away from 0
+    return -torch.log(e)
+
+
 @dataclass
 class SampleOut:
     grid: torch.Tensor         # (B,16) digits
@@ -53,8 +59,12 @@ class SampleOut:
 
 @torch.no_grad()
 def sample(model, puzzles: torch.Tensor, steps: int, strategy: str = "confidence",
-           temperature: float = 0.0, generator: torch.Generator | None = None) -> SampleOut:
-    """puzzles: (B,16) digits with 0 = hidden. Commits ceil(remaining / steps_left) cells per step."""
+           temperature: float = 0.0, generator: torch.Generator | None = None,
+           order_temp: float = 0.0) -> SampleOut:
+    """puzzles: (B,16) digits with 0 = hidden. Commits ceil(remaining / steps_left) cells per step.
+    order_temp > 0 (phase 4): the cells to commit are drawn without replacement with weights
+    score^(1/order_temp) (Gumbel top-k on log score / order_temp) instead of the top k scores; 0 leaves
+    the code path and the random stream unchanged."""
     device = puzzles.device
     grid = puzzles.clone()
     masked = puzzles == 0
@@ -75,6 +85,8 @@ def sample(model, puzzles: torch.Tensor, steps: int, strategy: str = "confidence
         else:
             chosen = probs.argmax(-1)
         scores = score_positions(probs, chosen, strategy, generator)
+        if order_temp > 0:
+            scores = scores.clamp_min(1e-12).log() / order_temp + gumbel_like(scores)
         commit = select_topk(scores, masked, k)
         conf = probs.gather(-1, chosen.unsqueeze(-1)).squeeze(-1)
         grid = torch.where(commit, chosen + 1, grid)

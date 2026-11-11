@@ -1,0 +1,2 @@
+model,J_valid_share,gstar_norm,gstar_cos_between_halves,puzzles,ref_rollouts_per_puzzle,sampler_steps
+start,0.49963,0.74839,0.80536,256,64,4

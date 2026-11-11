@@ -1,0 +1,21 @@
+a,b,sampler_steps,a_minus_b,lo,hi
+floored + sampled order,"wd1, floored",4,-0.0015,-0.018,0.015
+floored + sampled order,"wd1, floored",16,-0.006,-0.021,0.0085
+floored + batch weights,"wd1, floored",4,0.0305,0.012,0.05
+floored + batch weights,"wd1, floored",16,-0.001,-0.0175,0.0155
+floored + both,"wd1, floored",4,0.0235,0.0035,0.044
+floored + both,"wd1, floored",16,0.011,-0.0045,0.0265
+floored + both,floored + sampled order,4,0.025,0.0075,0.043
+floored + both,floored + sampled order,16,0.017,0.0015,0.0325
+floored + both,floored + batch weights,4,-0.007,-0.0205,0.0065
+floored + both,floored + batch weights,16,0.012,-0.0005,0.025
+floored + batch weights,filtered imitation,4,-0.007,-0.0275,0.0135
+floored + batch weights,filtered imitation,16,-0.012,-0.029,0.005
+floored + both,filtered imitation,4,-0.014,-0.0335,0.0065
+floored + both,filtered imitation,16,0.0,-0.017,0.0175
+floored + batch weights,"self-training, SFT loss",4,-0.023,-0.0465,0.0005
+floored + batch weights,"self-training, SFT loss",16,-0.014,-0.032,0.0045
+floored + both,"self-training, SFT loss",4,-0.03,-0.0525,-0.008
+floored + both,"self-training, SFT loss",16,-0.002,-0.0195,0.016
+interaction (both − order − batch + neither),,4,-0.0055,-0.0255,0.014
+interaction (both − order − batch + neither),,16,0.018,-0.002,0.037

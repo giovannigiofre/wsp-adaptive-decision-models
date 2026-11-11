@@ -1,0 +1,18 @@
+{
+ "band": "hard",
+ "n": 667,
+ "oracle_solve": 1.0,
+ "oracle_ci": [
+  1.0,
+  1.0
+ ],
+ "confidence_81_solve": 0.8710644677661169,
+ "oracle_minus_confidence_81": 0.12893553223388307,
+ "diff_ci": [
+  0.10494752623688156,
+  0.15446026986506728
+ ],
+ "share_never_stuck": 1.0,
+ "median_stuck_step_when_stuck": null,
+ "mean_hidden_cells": 53.52473831176758
+}
