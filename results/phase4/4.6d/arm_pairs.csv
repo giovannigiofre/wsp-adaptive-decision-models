@@ -1,0 +1,17 @@
+a,b,sampler_steps,a_minus_b,lo,hi
+supervised,self_diffusion,4,0.0075,-0.0065,0.022
+supervised,self_diffusion,16,0.0135,0.0035,0.0245
+supervised_onsolved,self_diffusion,4,0.005,-0.0085,0.0185
+supervised_onsolved,self_diffusion,16,0.003,-0.0075,0.0145
+supervised_onunsolved,self_diffusion,4,0.001,-0.0145,0.018
+supervised_onunsolved,self_diffusion,16,0.0145,0.0025,0.028
+supervised,supervised_onsolved,4,0.0025,-0.011,0.016
+supervised,supervised_onsolved,16,0.0105,0.001,0.021
+supervised,supervised_onunsolved,4,0.0065,-0.01,0.0215
+supervised,supervised_onunsolved,16,-0.001,-0.0125,0.0105
+supervised_onsolved,supervised_onunsolved,4,0.004,-0.012,0.02
+supervised_onsolved,supervised_onunsolved,16,-0.0115,-0.0235,0.0005
+supervised,wd1_beta0_tau1_batchw,4,0.0,-0.0155,0.0155
+supervised,wd1_beta0_tau1_batchw,16,0.0035,-0.011,0.0185
+supervised_onsolved,wd1_beta0_tau1,4,0.0175,0.0,0.0355
+supervised_onsolved,wd1_beta0_tau1,16,0.005,-0.008,0.0175
