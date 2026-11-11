@@ -69,6 +69,13 @@ main() {
     self-a2-seed) n="${ARM:?set ARM}_s${SEED:?set SEED}"
                $PY -m phase4.selfloop --arm "$ARM" --exp 4.8c --name "$n" --launch-minutes 100 --set diffusion_training.seed="$SEED"
                if [ -f "results/phase4/4.8c/$n.json" ]; then $PY -m phase4.selflearn --exp 4.8c --name "$n"; fi ;;
+    # 4.8d the seed-0 hindsight run of 4.8b continued to 34 rounds (step 43,546, the step of the supervised plateau).
+    # The first launch copies the 4.8b state (model, optimiser, buffer, rng) and its per-round log, then resumes.
+    self-a2-long) c="$HOME/dllm-cache/phase4"; mkdir -p "$c/4.8d/hindsight_long" results/phase4/4.8d
+               [ -f "$c/4.8d/hindsight_long/state.pt" ] || { cp "$c/4.8b/hindsight/state.pt" "$c/4.8d/hindsight_long/state.pt"
+                 cp results/phase4/4.8b/hindsight.csv results/phase4/4.8d/hindsight_long.csv; }
+               $PY -m phase4.selfloop --arm hindsight --exp 4.8d --name hindsight_long --rounds 34 --launch-minutes 100
+               if [ -f results/phase4/4.8d/hindsight_long.json ]; then $PY -m phase4.selflearn --exp 4.8d --name hindsight_long; fi ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
