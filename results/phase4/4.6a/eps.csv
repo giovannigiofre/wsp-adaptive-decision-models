@@ -1,0 +1,7 @@
+model,rollouts,n,estimate,exact_logp_mean,gap_mean,gap_std,gap_abs_mean,corr_with_exact
+start,invalid,5158,onestep_masked_prompt,-7.40571,-53.19601,12.14895,53.19889,0.13207
+start,invalid,5158,onestep_no_mask,-7.40571,-31.94205,9.39413,31.94752,0.26367
+start,invalid,5158,path_no_order_factor,-7.40571,3.79658,4.19181,3.79658,0.6569
+start,valid,5082,onestep_masked_prompt,-2.9292,-49.06777,13.58354,49.09808,0.03143
+start,valid,5082,onestep_no_mask,-2.9292,-23.43299,9.82423,23.88236,0.01561
+start,valid,5082,path_no_order_factor,-2.9292,2.42972,5.15042,2.42972,0.2767

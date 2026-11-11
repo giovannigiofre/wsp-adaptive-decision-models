@@ -1,6 +1,6 @@
 # 4.6b: detector gate. How good must a detector of wrong cells be, and is the information in the frozen model?
 
-**Status: setup and predictions written before the full run.** A smoke run of the code (CPU, 300 probe puzzles, 4 passes only, ρ in {0.7, 1.0} × φ in {0, 0.3}) was seen before writing the predictions; what it showed is listed below so the predictions can be read with that in mind.
+**Status: done (2026-11-11). Setup and predictions were committed before the full run (`dbdd690`).** A smoke run of the code (CPU, 300 probe puzzles, 4 passes only, ρ in {0.7, 1.0} × φ in {0, 0.3}) was seen before writing the predictions; what it showed is listed below so the predictions can be read with that in mind.
 
 **Goal.** 4.5b: with exactly the wrong cells masked the model repairs every hard test grid in two rounds, and no score from the model or the rules detects them (AUROC 0.41 to 0.69). Before training any detector (with labels or with reward), two cheap questions. Direction 5 of [`docs/RL_DLLM_DIRECTIONS.md`](../../docs/RL_DLLM_DIRECTIONS.md); no model is trained here.
 
@@ -28,3 +28,44 @@ PYTHONPATH=src python -m phase4.detector_gate --size medium
 Config `configs/phase4.yaml`. Results: `results/phase4/4.6b/degraded_oracle.csv`, `probes.csv`.
 
 **Limits known before the run:** the probe is fitted on grids after the fill and reused on grids after a fix round; the "charged" arm reuses the probe fitted for the longer fill; a linear probe on the last layer only; random-detector draws from one seed.
+
+## Results (2026-11-11, 01:37 to 01:41, 4 min)
+
+Hardware Apple M5 24 GB, MPS, torch 2.15.0, float32, seed 0, greedy decoding (MPS is not bit-deterministic). Hard test band, 667 puzzles. Intervals: 95% bootstrap over puzzles of the paired difference from the plain sampler at the same number of forward passes. The gradient audit of 4.6a ran beside it.
+
+**Degraded oracle**, solve rate minus plain sampler (plain: 0.535 at 4 passes, 0.736 at 8):
+
+| recall ρ | 4 passes: φ = 0 | 0.1 | 0.3 | 0.6 | 8 passes: φ = 0 | 0.1 | 0.3 | 0.6 |
+|---|---|---|---|---|---|---|---|---|
+| 0.5 | −0.093 | −0.090 | −0.092 | −0.093 | −0.064 | −0.068 | −0.066 | −0.081 |
+| 0.7 | −0.081 | −0.080 | −0.078 | −0.082 | −0.052 | −0.052 | −0.042 | −0.064 |
+| 0.9 | +0.042 [+0.005, +0.077] | +0.017 [−0.020, +0.053] | +0.026 [−0.009, +0.060] | −0.015 | +0.054 [+0.026, +0.086] | +0.077 [+0.047, +0.108] | +0.051 [+0.023, +0.083] | +0.020 [−0.009, +0.051] |
+| 1.0 | +0.372 | +0.364 | +0.307 | +0.147 | +0.264 | +0.262 | +0.262 | +0.214 |
+
+Every ρ ≤ 0.7 cell has an interval entirely below zero; every ρ = 1.0 cell entirely above. With ρ = 1.0 the solve rate at 8 passes is 1.000, 0.999, 0.999 and 0.951 for φ = 0, 0.1, 0.3, 0.6.
+
+**Probes** (logistic regression, fitted on 160,289 cells of 3,000 hard train puzzles):
+
+| fill steps | pass | inputs | AUROC, all cells | AUROC, failed grids | recall ρ | false alarms φ |
+|---|---|---|---|---|---|---|
+| 3 | visible | features + probabilities | 0.75 | 0.64 | 0.60 | 0.22 |
+| 3 | cell masked | features + probabilities | 0.76 | 0.64 | 0.58 | 0.19 |
+| 6 | visible | features + probabilities | 0.76 | 0.59 | 0.62 | 0.21 |
+| 6 | cell masked | features + probabilities | 0.77 | 0.60 | 0.60 | 0.17 |
+| 3 / 6 | visible | probabilities only | 0.54 / 0.53 | 0.53 / 0.52 | | |
+| 3 / 6 | cell masked | probabilities only | 0.61 / 0.59 | 0.59 / 0.56 | | |
+
+**The visible probe as detector:** 4 passes −0.054 [−0.087, −0.021]; 8 passes −0.044 [−0.072, −0.014]; with the detector passes charged to the budget −0.241 and −0.153.
+
+## Predictions against results
+
+1. Recall matters far more than false alarms: **held.** ρ = 1.0 beats the plain sampler at every φ tested (also 0.6); no cell with ρ ≤ 0.7 does.
+2. ρ = 0.9 above the plain sampler at 8 passes and not at 4: **held at 8** for φ ≤ 0.3; **at 4 in part** (above only at φ = 0, interval from +0.005).
+3. Probes above 0.69 on all cells and below 0.75 inside failed grids: **held** (0.75 to 0.77; 0.59 to 0.64).
+4. Masking the cell adds little: **held** (+0.01 on all cells).
+5. The probe as detector does not beat the plain sampler: **held**; it is below it.
+
+## What this shows / does not show
+
+- Shows: fill-then-fix needs a detector that finds about nine wrong cells in ten; false alarms are cheap (masking 30% of the right cells costs nothing at 8 passes), misses are not. A linear readout of the frozen model's last layer finds six in ten and ranks wrong cells worse inside failed grids (0.59 to 0.64) than over all cells (0.75 to 0.77): it mostly tells failed grids from solved ones. By the memo's rule the label-trained head on frozen features is not the next step; a detector would have to change the features or use more than one pass.
+- Does not show: that a non-linear head, earlier layers, or a fine-tuned model cannot reach ρ = 0.9 (none was tried); how a detector with errors concentrated in particular grids behaves (the degraded oracle misses cells independently, a real detector's misses are correlated); anything about a lower threshold on the probe, which trades φ for ρ and was not swept. One seed for the random detector draws.
