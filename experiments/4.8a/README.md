@@ -8,7 +8,7 @@
 
 **Where a solution is still read:** only in the `val_cell_acc` column of the training log (share of hidden val cells equal to the stored solution), a measurement that does not enter training or any decision here.
 
-**Reference, no rerun:** the supervised model of 4.1 after the same 60 minutes (step 8,500, `results/phase4/sft/sft.csv`): val solve at 16 steps 1.000 easy, 0.997 medium, 0.647 hard.
+**Reference, no rerun:** the supervised model of 4.1 after the same 60 minutes (step 9,500 at 3,649 s, `results/phase4/sft/sft.csv`): val solve at 16 steps 1.000 easy, 0.985 medium, 0.668 hard.
 
 **Known limits, before the run.** In training at least all blanks are masked (30 or more cells), so states with fewer masked cells, which the sampler visits as it fills the grid, are never seen. One seed, one model size. Val puzzles only.
 
@@ -21,7 +21,7 @@ Mine differ in part, and I record both:
 1. **Easy at 16 steps is above 0.3**, more likely above the memo's upper bound than below its lower one. Reason: the givens are a random subset of the solution's cells, so predicting a hidden given from the visible ones is the same per-cell problem as ordinary masked training at mask ratios above 30/81, with the loss on fewer cells.
 2. **More sampler steps help:** valid share at 81 steps at least that at 16, and 4 steps clearly below 16, on every band where it is not zero.
 3. **Hard is above 0.01 and below 0.3 at 16 steps** (the memo says below 0.01). Hard puzzles have 25 to 30 givens, so the model sees few labelled cells per hard puzzle, but easy and medium puzzles masked at large t give the same kind of state.
-4. **Below the supervised model at equal time on every band** (it has 1.000 / 0.997 / 0.647).
+4. **Below the supervised model at equal time on every band** (it has 1.000 / 0.985 / 0.668).
 
 **Done when** (memo): easy valid share at least 0.05 at some step budget; enough valid grids to start the harvest stage A2. **Negative result:** below 0.01 at every budget; reported as such, then the rule mask or a small-k curriculum, one at a time.
 
