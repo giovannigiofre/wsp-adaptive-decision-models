@@ -90,6 +90,7 @@ def main():
     ap.add_argument("--size", default="medium")
     ap.add_argument("--arm", required=True, choices=["givens", "harvest", "hindsight"])
     ap.add_argument("--exp", default="4.8b")
+    ap.add_argument("--name", default=None, help="run name for results and checkpoints; default: the arm")
     ap.add_argument("--init", default="4.8a/a1/state.pt", help="training state to start from, under the phase 4 cache")
     ap.add_argument("--rounds", type=int, default=10)
     ap.add_argument("--round-steps", type=int, default=1000)
@@ -104,9 +105,10 @@ def main():
     cfg["model"].update(cfg["sizes"][a.size])
     tc = cfg["diffusion_training"]
     dev = get_device(a.device or cfg["runtime"]["device"])
-    out, ck = Path("results/phase4") / a.exp, cache_dir(cfg) / a.exp / a.arm
+    name = a.name or a.arm
+    out, ck = Path("results/phase4") / a.exp, cache_dir(cfg) / a.exp / name
     out.mkdir(parents=True, exist_ok=True); ck.mkdir(parents=True, exist_ok=True)
-    log_path, state_path, done_path = out / f"{a.arm}.csv", ck / "state.pt", out / f"{a.arm}.json"
+    log_path, state_path, done_path = out / f"{name}.csv", ck / "state.pt", out / f"{name}.json"
     if done_path.exists():
         print(f"skip {a.arm}: already finished"); return
     sets, bands, names = load_sets(cfg, dev, ("train", "val"))

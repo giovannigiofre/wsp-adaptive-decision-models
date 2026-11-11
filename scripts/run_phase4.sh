@@ -65,6 +65,10 @@ main() {
     # at a time; a launch pauses after 100 minutes at the next round end, repeat it until it prints "finished".
     self-a2)   $PY -m phase4.selfloop --arm "${ARM:?set ARM}" --launch-minutes 100
                if [ -f "results/phase4/4.8b/$ARM.json" ]; then $PY -m phase4.selflearn --exp 4.8b --name "$ARM"; fi ;;
+    # 4.8c seeds 1 and 2 of the harvest and hindsight arms of 4.8b (same start model). ARM=harvest|hindsight SEED=1|2.
+    self-a2-seed) n="${ARM:?set ARM}_s${SEED:?set SEED}"
+               $PY -m phase4.selfloop --arm "$ARM" --exp 4.8c --name "$n" --launch-minutes 100 --set diffusion_training.seed="$SEED"
+               if [ -f "results/phase4/4.8c/$n.json" ]; then $PY -m phase4.selflearn --exp 4.8c --name "$n"; fi ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
