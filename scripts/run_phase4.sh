@@ -61,8 +61,8 @@ main() {
     self-a1)   $PY -m phase4.train --name a1 --size medium --loss givens --max-minutes 60 --no-plateau \
                  --out results/phase4/4.8a --ckpt-dir ~/dllm-cache/phase4/4.8a/a1
                $PY -m phase4.selflearn --name a1 ;;
-    # 4.8b self-training from the rule checker (stage A2), from the 4.8a model. ARM=givens|harvest|hindsight, the three
-    # side by side; a launch pauses after 100 minutes at the next round end, repeat it until it prints "finished".
+    # 4.8b self-training from the rule checker (stage A2), from the 4.8a model. ARM=givens|harvest|hindsight, one arm
+    # at a time; a launch pauses after 100 minutes at the next round end, repeat it until it prints "finished".
     self-a2)   $PY -m phase4.selfloop --arm "${ARM:?set ARM}" --launch-minutes 100
                if [ -f "results/phase4/4.8b/$ARM.json" ]; then $PY -m phase4.selflearn --exp 4.8b --name "$ARM"; fi ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
