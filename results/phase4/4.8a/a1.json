@@ -1,0 +1,42 @@
+{
+ "name": "a1",
+ "stop_reason": "time_budget",
+ "final_step": 9546,
+ "best_val_loss": 0.6694995164871216,
+ "best_val_loss_step": 9546,
+ "final": {
+  "step": 9546,
+  "train_loss": 0.6843681659387506,
+  "val_loss": 0.6694995164871216,
+  "val_solve": 0.8103792667388916,
+  "val_cell_acc": 0.9137877225875854,
+  "val_solve_easy": 0.9970059990882874,
+  "val_solve_medium": 0.9491018056869507,
+  "val_solve_hard": 0.485029935836792,
+  "lr": 0.0003,
+  "elapsed_s": 3600.2998991012573
+ },
+ "n_params": 1876489,
+ "model": {
+  "grid_n": 9,
+  "n_layers": 6,
+  "d_model": 160,
+  "n_heads": 4,
+  "dropout": 0.1,
+  "pos_embedding": "structured"
+ },
+ "wall_clock_s": 3610.3336551189423,
+ "overrides": [],
+ "size": "medium",
+ "loss": "givens",
+ "seed": 0,
+ "env": {
+  "python": "3.12.13",
+  "torch": "2.15.0",
+  "device": "mps",
+  "machine": "arm64",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "torch_threads": 4
+ },
+ "ckpt_dir": "/Users/giovannigiofre/dllm-cache/phase4/4.8a/a1"
+}
