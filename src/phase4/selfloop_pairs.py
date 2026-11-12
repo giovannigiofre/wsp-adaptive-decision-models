@@ -3,6 +3,7 @@
 
     PYTHONPATH=src python -m phase4.selfloop_pairs --exp 4.8b --pairs harvest:givens hindsight:givens hindsight:harvest
     PYTHONPATH=src python -m phase4.selfloop_pairs --pooled        # 4.8c: seeds 0 (4.8b), 1, 2 (4.8c) pooled per puzzle
+    PYTHONPATH=src python -m phase4.selfloop_pairs --long          # 4.8e: hindsight_long (4.8d) minus givens_long (4.8e)
 """
 from __future__ import annotations
 
@@ -43,14 +44,36 @@ def pooled(arms=("hindsight", "harvest"), control="givens"):
     print(df.to_string(index=False))
 
 
+def long_pairs():
+    """4.8e: paired difference hindsight_long (4.8d) - givens_long (4.8e) per val puzzle, 95% bootstrap over puzzles."""
+    R = Path("results/phase4")
+    dx = pd.read_csv(R / "4.8d" / "hindsight_long_solved_val.csv").set_index("puzzle")
+    dy = pd.read_csv(R / "4.8e" / "givens_long_solved_val.csv").set_index("puzzle").loc[dx.index]
+    rows = []
+    for col in ("valid_4", "valid_16", "valid_81"):
+        for band in ("easy", "medium", "hard"):
+            m = (dx["band"] == band).to_numpy()
+            d = (dx[col].to_numpy() - dy[col].to_numpy())[m].astype(float)
+            lo, hi = bootstrap_ci(d)
+            rows.append({"a": "hindsight_long", "b": "givens_long", "sampler_steps": int(col.split("_")[1]), "band": band,
+                         "n": int(m.sum()), "a_valid": dx[col].to_numpy()[m].mean(), "b_valid": dy[col].to_numpy()[m].mean(),
+                         "a_minus_b": d.mean(), "lo": lo, "hi": hi})
+    df = pd.DataFrame(rows).round(4)
+    df.to_csv(R / "4.8e" / "long_pairs.csv", index=False)
+    print(df.to_string(index=False))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exp", default="4.8b")
     ap.add_argument("--pairs", nargs="+", default=["harvest:givens", "hindsight:givens", "hindsight:harvest"])
     ap.add_argument("--pooled", action="store_true")
+    ap.add_argument("--long", action="store_true")
     a = ap.parse_args()
     if a.pooled:
         return pooled()
+    if a.long:
+        return long_pairs()
     out = Path("results/phase4") / a.exp
     rows = []
     for pair in a.pairs:
