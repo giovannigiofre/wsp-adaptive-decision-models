@@ -81,7 +81,7 @@ def filtered(r: torch.Tensor) -> GroupWeights:
 
 WEIGHTED: dict[str, Callable[..., GroupWeights]] = {"wd1": wd1, "reinforce": reinforce, "filtered": filtered}
 KIND = {**{k: "weighted" for k in WEIGHTED}, "grpo": "grpo", "self_diffusion": "diffusion",
-        "supervised": "diffusion"}
+        "supervised": "diffusion", "givens": "diffusion"}   # givens (phase 4.9b): control, see rl.py
 
 
 def weighted_loss(logp: torch.Tensor, gw: GroupWeights) -> torch.Tensor:

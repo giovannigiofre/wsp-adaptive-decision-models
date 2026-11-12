@@ -82,6 +82,15 @@ main() {
                $PY -m phase4.selfloop --arm givens --exp 4.8e --name givens_long --rounds 34 --launch-minutes 100
                if [ -f results/phase4/4.8e/givens_long.json ]; then $PY -m phase4.selflearn --exp 4.8e --name givens_long; fi ;;
     givens-probe) $PY -m phase4.givens_probe ;;
+    # 4.9b low-lr training of the givens-only model (4.8e) on its own valid grids; one launch per arm, three seeds
+    # side by side. self4: rollouts with 4 sampler steps (as 4.4); self16: with 16; ctrl: givens loss, checker unused.
+    self49-self4|self49-self16|self49-ctrl)
+               local R="$PY -m phase3.rl --config configs/phase4_rl_givens.yaml --exp 4.9b --seed ${SEED:?set SEED}"
+               case "$what" in
+                 self49-self4)  $R ;;
+                 self49-self16) $R --set rl.harvest_steps=16 ;;
+                 self49-ctrl)   $R --set rl.objective=givens ;;
+               esac ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }

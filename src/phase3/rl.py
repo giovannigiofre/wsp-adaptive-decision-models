@@ -197,7 +197,8 @@ def run_name(rc: dict, seed: int, tag: str = "") -> str:
              {"sequential": "seqlik", "trajectory": "trajlik"}.get(rc.get("likelihood", "onestep"), ""),
              f"ord{rc['order_temp']:g}" if rc.get("order_temp", 0) else "",
              "batchw" if rc.get("weights_over", "group") == "batch" else "",
-             f"on{rc['supervised_on']}" if rc.get("supervised_on", "all") != "all" else "", f"seed{seed}{tag}"]
+             f"on{rc['supervised_on']}" if rc.get("supervised_on", "all") != "all" else "",
+             f"h{rc['harvest_steps']}" if rc.get("harvest_steps") else "", f"seed{seed}{tag}"]
     return "_".join(p for p in parts if p)
 
 
@@ -233,15 +234,19 @@ def main():
     cache, fields = CACHE, FIELDS
     if p4:
         from phase4.generate import cache_dir
+        from phase4.selflearn import givens_loss
         base["model"].update(base["sizes"][cfg["size"]])
         cache = cache_dir(base)
     rc = cfg["rl"]
     dense = rc["reward"] == "cell_accuracy"                        # phase 4.6: needs the solution, so not in REWARDS
     kind, params, reward_fn = KIND[rc["objective"]], objective_params(rc), None if dense else REWARDS[rc["reward"]]
+    if rc["objective"] == "givens" and not p4:
+        raise SystemExit("rl.objective=givens is defined for task sudoku9 only")
     sup_on = rc.get("supervised_on", "all")                        # phase 4.6: puzzle filter of `supervised`
     if sup_on not in ("all", "solved", "unsolved"):
         raise SystemExit(f"unknown rl.supervised_on {sup_on!r}")
     steps, B, G, S = rc["max_rl_steps"], rc["batch_puzzles"], rc["group_size"], rc["rollout_steps"]
+    S_roll = rc.get("harvest_steps") or S                          # phase 4.9b: sampler steps of the training rollouts only
     S_ref = rc.get("eval_steps_ref")                               # optional second sampler budget at evaluation
     if S_ref:
         fields = FIELDS + ["val_solve_ref"]
@@ -328,7 +333,7 @@ def main():
         idx = torch.randint(0, len(train), (B,), device=dev)
         P = train.puzzles[idx].repeat_interleave(G, 0)
         with torch.no_grad():
-            ro = sample(roll_model, P, S, rc["rollout_strategy"], rc["rollout_temperature"], order_temp=order_temp)
+            ro = sample(roll_model, P, S_roll, rc["rollout_strategy"], rc["rollout_temperature"], order_temp=order_temp)
             O, CS = ro.grid, ro.commit_step
         valid = batch_validity(O, P).view(B, G)
         r = (cell_accuracy(O, P, train.solutions[idx].repeat_interleave(G, 0)) if dense else reward_fn(O, P)).view(B, G)
@@ -343,13 +348,17 @@ def main():
                     sel = (solved if sup_on == "solved" else ~solved).repeat_interleave(G)
                     Pt, Ot = Pt[sel], Ot[sel]
                     row["frac_skipped"] = 1 - sel.float().mean().item()
+            elif rc["objective"] == "givens":              # phase 4.9b control: masked givens of the batch puzzles,
+                Pt, Ot = P, None                           # the rollouts and the checker are not used by the loss
+                row["frac_skipped"] = 0.0
             else:
                 sel = valid.view(-1)
                 Pt, Ot = P[sel], O[sel]
                 row["frac_skipped"] = 1 - valid.any(1).float().mean().item()
             if len(Pt):
                 for _ in range(mu):
-                    loss = diffusion_loss(model, PuzzleSet(Pt, Ot, torch.zeros(len(Pt))), t_min)
+                    loss = (givens_loss(model, Pt, t_min) if Ot is None else
+                            diffusion_loss(model, PuzzleSet(Pt, Ot, torch.zeros(len(Pt))), t_min))
                     norms.append(update(loss)); losses.append(loss.item())
         else:
             A, keep = advantages(r)
@@ -428,7 +437,7 @@ def main():
             "reward": rc["reward"], "ref_mix": ref_mix, "ref_kl": ref_kl,
             "likelihood": lik, "order_temp": order_temp, "weights_over": "batch" if batch_w else "group", "seed": a.seed, "tag": a.tag, "lr": rc["lr"],
             "inner_steps": mu, "grad_clip": rc["grad_clip"], "weight_decay": rc.get("weight_decay", 0.0),
-            "rollout_steps": S, "supervised_on": sup_on,
+            "rollout_steps": S, "harvest_steps": S_roll, "supervised_on": sup_on,
             "steps": steps, "init": str(init),
             "init_sha256": init_hash, "overrides": a.set, "code_commit": git_commit(),
             "best_val": best[0], "best_step": best[1], "final_val": final_val, "final_test": final_test,
