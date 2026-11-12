@@ -84,6 +84,15 @@ def harvest(model, P: torch.Tensor, idx: torch.Tensor, found: torch.Tensor, has:
     return int(ok.sum())
 
 
+def set_lr(opt, sched, lr: float) -> None:
+    """4.9d: replace the learning rate of a loaded optimiser and scheduler (both carry the old one in their state)."""
+    sched.base_lrs = [lr for _ in sched.base_lrs]
+    for g, lam in zip(opt.param_groups, sched.lr_lambdas):
+        g["initial_lr"] = lr
+        g["lr"] = lr * lam(sched.last_epoch)
+    sched._last_lr = [g["lr"] for g in opt.param_groups]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="configs/phase4.yaml")
@@ -98,6 +107,7 @@ def main():
     ap.add_argument("--harvest-block", type=int, default=15000, help="unsolved puzzles tried per round after the first")
     ap.add_argument("--givens-share", type=float, default=0.25)
     ap.add_argument("--launch-minutes", type=float, default=None)
+    ap.add_argument("--lr", type=float, default=None, help="4.9d: learning rate set after loading the state (default: keep it)")
     ap.add_argument("--device", default=None)
     ap.add_argument("--set", nargs="*", default=[])
     a = ap.parse_args()
@@ -125,6 +135,8 @@ def main():
     resumed = state_path.exists()
     st = torch.load(state_path if resumed else cache_dir(cfg) / a.init, map_location=dev)
     model.load_state_dict(st["model"]); opt.load_state_dict(st["opt"]); sched.load_state_dict(st["sched"])
+    if a.lr is not None:
+        set_lr(opt, sched, a.lr)
     step = step_init = st["step"]
     if resumed:
         torch.set_rng_state(st["rng_cpu"].cpu())

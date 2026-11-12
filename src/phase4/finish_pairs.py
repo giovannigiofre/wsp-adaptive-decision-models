@@ -2,6 +2,7 @@
 Seeds pooled per puzzle, 95% bootstrap over puzzles. Each arm against its own start model; arms against self4.
 
     PYTHONPATH=src python -m phase4.finish_pairs        # results/phase4/4.9c/pairs.csv, val_jumps.csv
+    PYTHONPATH=src python -m phase4.finish_pairs --lowlr  # 4.9d: results/phase4/4.9d/pairs.csv, val_rounds.csv
 """
 from __future__ import annotations
 
@@ -47,5 +48,41 @@ def main():
     print(j.to_string(index=False))
 
 
+def lowlr():
+    """4.9d: the two long runs continued at lr 1e-5, hard test band, against their starts and the 500-step arms."""
+    t, b = pd.read_csv(R / "4.9c" / "test_solved.csv"), pd.read_csv(R / "4.9b" / "test_solved.csv")
+    rd = lambda e, n: pd.read_csv(R / e / f"{n}_solved_test.csv")  # noqa: E731
+    d = {"hindsight_long": rd("4.8d", "hindsight_long"), "givens_long": rd("4.8e", "givens_long"),
+         "hindsight_lr1e-5": rd("4.9d", "hindsight_lr1e-5"), "givens_lr1e-5": rd("4.9d", "givens_lr1e-5")}
+    assert all((v.puzzle == t.puzzle).all() for v in d.values()) and (t.puzzle == b.puzzle).all()
+    h = (t.band == "hard").to_numpy()
+    pool = lambda f, pat, S: np.mean([f[pat.format(s=s) + f"|{S}"].to_numpy()[h] for s in range(3)], 0)  # noqa: E731
+    rows = []
+    for S in (4, 16, 81):
+        v = {k: x[f"valid_{S}"].to_numpy()[h].astype(float) for k, x in d.items()}
+        if S != 81:
+            v["self4 (4.9b)"], v["hind (4.9c)"] = pool(b, "self_diffusion_seed{s}", S), pool(t, "self_diffusion_seed{s}_hind", S)
+        pairs = [("hindsight_lr1e-5", "hindsight_long"), ("givens_lr1e-5", "givens_long"), ("hindsight_lr1e-5", "givens_lr1e-5")]
+        pairs += [("hindsight_lr1e-5", "hind (4.9c)"), ("givens_lr1e-5", "self4 (4.9b)")] if S != 81 else []
+        for x, y in pairs:
+            lo, hi = paired_ci(v[x] - v[y])
+            rows.append({"a": x, "b": y, "sampler_steps": S, "a_test": v[x].mean(), "b_test": v[y].mean(),
+                         "a_minus_b": (v[x] - v[y]).mean(), "lo": lo, "hi": hi})
+    df = pd.DataFrame(rows).round(4)
+    df.to_csv(R / "4.9d" / "pairs.csv", index=False)
+    pd.set_option("display.width", 250)
+    print(df.to_string(index=False))
+    # hard val band per round: the last seven rounds at lr 3e-4 and the four at 1e-5
+    out = []
+    for n in ("hindsight_lr1e-5", "givens_lr1e-5"):
+        c = pd.read_csv(R / "4.9d" / f"{n}.csv")
+        c = c[c["round"] >= 28][["round", "step", "train_loss", "val_solve_hard", "val4_solve_hard", "val_solve_medium", "val4_solve_medium"]]
+        out.append(c.assign(run=n, lr=np.where(c["round"] > 34, 1e-5, 3e-4)))
+    r = pd.concat(out).round(4)
+    r.to_csv(R / "4.9d" / "val_rounds.csv", index=False)
+    print(r.to_string(index=False))
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    lowlr() if "--lowlr" in sys.argv else main()

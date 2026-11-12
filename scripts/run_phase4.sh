@@ -99,6 +99,21 @@ main() {
                  self49c-hind) $R --tag _hind --init "$HOME/dllm-cache/phase4/4.8d/hindsight_long/final.pt" ;;
                  *)            $R --tag "_${what#self49c-}" --set "rl.lr=${what#self49c-lr}" ;;
                esac ;;
+    # 4.9d the two long runs continued for 4 rounds with their own all-band training, learning rate 1e-5 instead of 3e-4
+    self49d-hind|self49d-givens)
+               local c="$HOME/dllm-cache/phase4" arm src n
+               case "$what" in
+                 self49d-hind)   arm=hindsight; src=4.8d/hindsight_long ;;
+                 self49d-givens) arm=givens;    src=4.8e/givens_long ;;
+               esac
+               n="${arm}_lr1e-5"; mkdir -p "$c/4.9d/$n" results/phase4/4.9d
+               [ -f "$c/4.9d/$n/state.pt" ] || { cp "$c/$src/state.pt" "$c/4.9d/$n/state.pt"
+                 cp "results/phase4/$src.csv" "results/phase4/4.9d/$n.csv"; }
+               $PY -m phase4.selfloop --arm $arm --exp 4.9d --name $n --rounds 38 --lr 1e-5 --launch-minutes 100
+               if [ -f "results/phase4/4.9d/$n.json" ]; then
+                 $PY -m phase4.selflearn --exp 4.9d --name $n --split val
+                 $PY -m phase4.selflearn --exp 4.9d --name $n --split test
+               fi ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
