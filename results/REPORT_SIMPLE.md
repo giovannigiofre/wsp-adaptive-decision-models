@@ -1,6 +1,6 @@
 # Diffusion language models on a MacBook, in plain words
 
-This is the simplified companion to [REPORT.md](REPORT.md). It covers the same three phases with less jargon and more "why". Numbers are the same ones as in the full report; nothing new was run for this page. It is a learning exercise, not research, and makes no novelty claims.
+This is the simplified companion to [REPORT.md](REPORT.md). It covers the same four phases with less jargon and more "why". Numbers are the same ones as in the full report; nothing new was run for this page. It is a learning exercise, not research, and makes no novelty claims.
 
 Where a sentence starts with *Likely why*, it is an interpretation that was **not** tested.
 
@@ -104,6 +104,25 @@ Three extra checks were run afterwards (3.6a–c), and two rows above need a cav
 
 ![order policy](phase3/3.4b/order_policy.png)
 
+## Phase 4: real-size Sudoku, and learning without an answer key
+
+The 4×4 toy was too easy, so phase 4 moved to ordinary 9×9 Sudoku: 100,000 generated puzzles, a model of 1.9 million parameters, five hours of training on the laptop. Scores below are on the 667 **hard** test puzzles, when the model is given 4, 16 or 81 fill-in steps (81 means one cell at a time).
+
+| Question | What we saw | Why |
+|---|---|---|
+| Does the number of steps matter now? | A lot: 54% solved with 4 steps, 81% with 16, 87% with 81. On the 4×4 toy one step was enough. | A wrong early cell cannot be taken back, and with few steps many cells are fixed at once. |
+| Does the order matter? | Enormously: filling cells in random order solves 13%, filling the surest cells first 81%. A perfect order would solve 100% with the same model. | *Likely why:* the sure cells make the others easier. |
+| How does it fail? | One or two wrong cells early, then many more that are consistent with those. | The model keeps building on its own mistake. |
+| Could it erase and retry? | If told exactly which cells are wrong, yes (91% with 4 passes). On its own, no: it cannot find them (a simple detector finds 6 in 10, about 9 in 10 are needed). | Knowing where you are wrong is the hard part. |
+| Does RL help? | It looked like it: practising on its own correct grids gave +7 points. Then we ran the missing control: just keep training normally with **smaller steps** (a lower learning rate). That gave +10 points, and after it the RL step added nothing. | The model had been trained with large steps the whole time. Any gentle extra training polished it, RL or not. |
+| Does wd1's push-down help here? | No, in any setting tried. In the last check, on the best model, it cost 8 puzzles in 100 at 4 steps; the same method with the punishing part switched off cost about 1. | Same as on the toy: punishing wrong attempts also damages what the model does right. |
+| Can it learn with **no solutions at all**? | Yes. Hide some of the printed digits, ask the model to put them back. That alone gets 50% / 81% / 90% (after the same smaller-steps polish), against 63% / 87% / 90% with the answer key. | The printed digits obey the same rules as the missing ones, so they are free examples. This depends on how our puzzles were generated. |
+| Does a checker ("this grid is right / wrong") help it teach itself? | It gives a faster start, not a better finish. A loop that collected its own correct grids for 99% of the hard training puzzles ended no higher than the model that only looked at printed digits. In the last check, a short round of practice on its own correct grids still added about 3 puzzles in 100 to the best no-solutions model at 4 steps, and nothing at 16. | *Likely why:* by the time the model can find a solution on its own, it has little left to learn from it. |
+
+![phase 4 overview](phase4/overview_hard_test.png)
+
+**Five conclusions were corrected by later runs**, and they are all still in the experiment notes. The big one: for a while the notes said "self-training improves the model" and "the no-solutions model matches the supervised one at 4 steps". Both came from comparing a polished model with an unpolished one.
+
 ## What did not go well
 
 - **Phase 1 samples are tiny.** 12 Sudoku, 12 Countdown and 5 GSM8K examples instead of the planned 100/100/50, because each answer takes about a minute. The error bars are ±20 to ±40 points. These are pilot numbers and cannot be compared with published ones.
@@ -117,7 +136,20 @@ Three extra checks were run afterwards (3.6a–c), and two rows above need a cav
 - **Phase 3 predictions were often wrong**, in the right direction for honesty but a reminder of how little intuition transfers: β = 2 did not just "do worse", it destroyed the model; a graded reward did not help, it killed positive-only; a head trained with the answers was no better than RL.
 - **Two phase 3 launches took over two hours** each, above the limit set for a single unattended run, because CPU and GPU jobs slowed each other. Some order-policy runs were moved to the CPU, so that experiment mixes devices (recorded per run).
 
-## Open questions after phase 3
+- **Phase 4 ran the most important control last.** About twenty experiments compared RL objectives and self-training loops on a model trained with a constant learning rate, before anyone checked what a plain learning-rate drop does. A decay schedule in the first training run would have saved most of them.
+- **About half of the phase 4 predictions were wrong**, including all three made from the short no-solutions runs about the long ones.
+- **Several phase 4 launches ran over their announced time** (up to 2 h 37 min against "under an hour"); the user was told while they ran.
+- **The hard test puzzles were looked at many times**, so small differences between experiments (2 to 3 points) should not be trusted.
+
+## Open questions after phase 3 and phase 4
+
+Phase 4 answered the first two of the three questions below only for a small model trained from scratch (push-down still does not pay; the start still decides everything, this time through its learning rate). What it adds:
+
+- Would a learned detector of wrong cells make "erase and retry" work? Nothing else measured here has as much headroom (54% → 91% at 4 passes).
+- Does training on printed digits alone work on puzzles whose givens are chosen by hand rather than at random?
+- With a proper learning-rate schedule from the start, is there anything left for RL to add on this task?
+
+The questions phase 3 left:
 
 The five questions phase 2 left were all answered on the toy (no; no; less than all; yes, completely; yes, on a frozen model). What is left is whether any of it survives a change of scale:
 
@@ -136,4 +168,7 @@ The five questions phase 2 left were all answered on the toy (no; no; less than 
 - **AUROC:** whether confidence ranks right answers above wrong ones. 0.5 is a coin flip; below 0.5 is misleading.
 - **RL (reinforcement learning):** learning from a score on the model's own attempts, with no answer key.
 - **wd1:** an RL objective for dLLMs that raises the likelihood of better-than-average attempts and lowers that of worse-than-average ones.
+- **Learning rate:** how large a correction the model makes at each training step. Large steps learn fast and stay rough; small steps polish.
+- **Givens / printed digits:** the digits a puzzle shows at the start.
+- **Checker:** a program that says whether a filled grid obeys the Sudoku rules. It does not know the solution.
 - **95% interval [a, b]:** the range the true value plausibly lies in, given how few examples we have.
