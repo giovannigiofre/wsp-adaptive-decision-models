@@ -1,0 +1,19 @@
+a,b,sampler_steps,band,a_valid,b_valid,a_minus_b,lo,hi,b_seed0,b_seed1
+hindsight,givens (2 seeds),4,easy,1.0,0.994,0.006,0.0015,0.012,0.994,0.994
+harvest,givens (2 seeds),4,easy,1.0,0.994,0.006,0.0015,0.012,0.994,0.994
+hindsight,givens (2 seeds),4,medium,0.8992,0.8428,0.0564,0.0294,0.0853,0.8503,0.8353
+harvest,givens (2 seeds),4,medium,0.9122,0.8428,0.0694,0.0429,0.0973,0.8503,0.8353
+hindsight,givens (2 seeds),4,hard,0.3623,0.2216,0.1407,0.1068,0.1747,0.2096,0.2335
+harvest,givens (2 seeds),4,hard,0.3393,0.2216,0.1178,0.0808,0.1557,0.2096,0.2335
+hindsight,givens (2 seeds),16,easy,1.0,1.0,0.0,0.0,0.0,1.0,1.0
+harvest,givens (2 seeds),16,easy,1.0,1.0,0.0,0.0,0.0,1.0,1.0
+hindsight,givens (2 seeds),16,medium,0.98,0.979,0.001,-0.0085,0.01,0.982,0.976
+harvest,givens (2 seeds),16,medium,0.985,0.979,0.006,-0.004,0.0175,0.982,0.976
+hindsight,givens (2 seeds),16,hard,0.6966,0.6497,0.0469,0.0145,0.0799,0.6497,0.6497
+harvest,givens (2 seeds),16,hard,0.6737,0.6497,0.024,-0.013,0.0614,0.6497,0.6497
+hindsight,givens (2 seeds),81,easy,1.0,1.0,0.0,0.0,0.0,1.0,1.0
+harvest,givens (2 seeds),81,easy,1.0,1.0,0.0,0.0,0.0,1.0,1.0
+hindsight,givens (2 seeds),81,medium,0.988,0.985,0.003,-0.0065,0.0145,0.988,0.982
+harvest,givens (2 seeds),81,medium,0.984,0.985,-0.001,-0.012,0.0115,0.988,0.982
+hindsight,givens (2 seeds),81,hard,0.8004,0.7201,0.0803,0.0469,0.1153,0.6886,0.7515
+harvest,givens (2 seeds),81,hard,0.7315,0.7201,0.0115,-0.019,0.0434,0.6886,0.7515

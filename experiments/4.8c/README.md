@@ -68,3 +68,24 @@ The negative result named before the run did not occur at 81 steps; it did occur
 
 - Shows: over three training seeds from the same start model, hindsight masks add about +0.07 to the harvest loop on the hard band when the sampler takes 81 steps (one cell per step), in every seed, and nothing measurable at 4 or 16 steps. The 4-step advantage of hindsight over harvest read in 4.8b was a low harvest seed. Against the single control run, both harvest arms stay well ahead at 4 steps (+0.13, +0.15) and hindsight at 81 steps (+0.11); at 16 steps harvest is not distinguishable from the control and hindsight is +0.047 with an interval that just clears zero.
 - Does not show: seed variance of the control or of the start model (one `givens` run, one 4.8a run), so every difference from the control still rests on one control seed. Why hindsight helps only at one cell per step was not examined (the hindsight states have givens masked, which is what the sampler meets late in an 81-step fill only loosely; not tested). Three seeds are a range, not an interval over seeds. Val only, no test evaluation; no plateau.
+
+## Addendum: a second seed of the givens-only control
+
+**Predictions written before the run (2026-11-12).** Seen: everything above, 4.8d, 4.8e. Every difference from the control in 4.8b and 4.8c rests on one `givens` run. `givens_s1`: the same control with `diffusion_training.seed` 1, 10 rounds from the 4.8a state to step 19,546 (`ARM=givens SEED=1 bash scripts/run_phase4.sh self-a2-seed ~/dllm-cache/venv/bin/python`).
+
+1. Hard val at 16 steps at the end: 0.60 to 0.68 (seed 0: 0.650); at 81 steps 0.64 to 0.73 (0.689); at 4 steps 0.17 to 0.27 (0.210).
+2. With the two control seeds pooled, `hindsight` − `givens` on hard keeps an interval above zero at 4 and 81 steps; at 16 steps it stays within ±0.03 of the +0.047 read with one control seed, interval possibly including zero.
+
+### Addendum results (2026-11-12, 03:53 to 05:01)
+
+One launch, 67 min; Apple M5 24 GB, MPS, torch 2.15.0, float32. No thermal warning. `givens_s1` on hard val at step 19,546: 0.234 / 0.650 / 0.752 at 4 / 16 / 81 steps (seed 0: 0.210 / 0.650 / 0.689). Arms pooled over three seeds, control pooled over its two seeds, 95% bootstrap over puzzles (`pooled_pairs_two_controls.csv`, `selfloop_pairs --two-controls`):
+
+| a − `givens` (2 seeds), hard band | 4 steps | 16 steps | 81 steps |
+|---|---|---|---|
+| `hindsight` | +0.141 [+0.107, +0.175] | +0.047 [+0.015, +0.080] | +0.080 [+0.047, +0.115] |
+| `harvest` | +0.118 [+0.081, +0.156] | +0.024 [−0.013, +0.061] | +0.012 [−0.019, +0.043] |
+
+Predictions: 1 **held at 16 and 4 steps, not at 81** (0.752, above the 0.64 to 0.73 range: the control's 81-step value moves by 0.06 between seeds). 2 **held** (hindsight above the control at all three budgets, +0.047 at 16 steps unchanged).
+
+- Shows: at 19,546 steps the hindsight arm's lead over the givens-only control holds with two control seeds; the harvest arm's lead at 81 steps does not (+0.043 with one control seed, +0.012 with two) and is left only at 4 steps.
+- Does not show: anything about the end point. 4.8e: by step 43,546 the control has caught up with the hindsight loop at every budget on test. Two control seeds are a pair, not an interval over seeds.
