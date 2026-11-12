@@ -81,3 +81,23 @@ The result named before the run as one that would change the reading of 4.8 occu
 for r in "sft sft" "4.8d hindsight_long" "4.8e givens_long"; do set -- $r; PYTHONPATH=src python -m phase4.selflearn --exp $1 --name $2 --split test; done
 PYTHONPATH=src python -m phase4.selfloop_pairs --long-test     # results/phase4/4.8e/long_pairs_test.csv
 ```
+
+### Test results (2026-11-12, 03:49 to 03:53)
+
+Apple M5 24 GB, MPS, torch 2.15.0, float32, greedy decoding. Hard test band, 667 puzzles, valid share with 95% bootstrap over puzzles (`results/phase4/sft/sft_valid_test.csv`, `4.8d/hindsight_long_valid_test.csv`, `4.8e/givens_long_valid_test.csv`, pairs in `4.8e/long_pairs_test.csv`):
+
+| hard test band | 4 steps | 16 steps | 81 steps |
+|---|---|---|---|
+| supervised 4.1 (uses solutions) | 0.535 [0.499, 0.573] | 0.814 [0.786, 0.841] | 0.871 [0.846, 0.895] |
+| `givens_long` (no solutions, no checker) | 0.438 [0.400, 0.475] | 0.780 [0.748, 0.811] | 0.850 [0.823, 0.877] |
+| `hindsight_long` (no solutions, checker) | 0.423 [0.387, 0.459] | 0.777 [0.747, 0.807] | 0.835 [0.805, 0.864] |
+| `hindsight_long` − `givens_long` | −0.015 [−0.054, +0.024] | −0.003 [−0.038, +0.032] | −0.015 [−0.048, +0.017] |
+| supervised − `givens_long` | +0.098 [+0.059, +0.138] | +0.035 [+0.003, +0.066] | +0.021 [−0.006, +0.050] |
+| supervised − `hindsight_long` | +0.112 [+0.074, +0.150] | +0.038 [+0.003, +0.071] | +0.036 [+0.006, +0.068] |
+
+Medium test band at 4 / 16 / 81 steps: supervised 0.957 / 0.996 / 0.999, `givens_long` 0.925 / 0.981 / 0.993, `hindsight_long` 0.928 / 0.984 / 0.991.
+
+Predictions against results: 1 (order at 16 steps, label-free difference 0.00 to +0.06) **held**, at the bottom: the two label-free models are equal (+0.003). 2 (81 steps within ±0.03) **held**. 3 (hindsight ahead at 4 steps by +0.02 to +0.08) **not held**: −0.015, interval including zero; supervised ahead of both held. 4 (supervised ahead of the better label-free model by +0.02 to +0.08 at 16 steps) **held** (+0.035, interval just above zero).
+
+- Shows: on the hard test band the two label-free models are not distinguishable at any sampler budget, including 4 steps: the val differences of the final models in both directions (+0.048 at 4 steps, −0.051 at 16) do not repeat on twice as many puzzles. At equal training steps, a model that never saw a solution or the checker is 0.035 below the supervised one at 16 steps and 0.02 below at 81 (interval including zero); the clear gap is at 4 steps (0.10).
+- Does not show: seed variance of any of the three (one run each); equal compute (the hindsight loop also spent rollouts; the supervised run stopped on a plateau rule, the other two at a fixed step); that the checker is useless in general: here it was used only to accept whole grids for a loss the givens already supply in part, and the short-run head start of 4.8b/4.8c is real.

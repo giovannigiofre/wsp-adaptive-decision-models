@@ -44,22 +44,26 @@ def pooled(arms=("hindsight", "harvest"), control="givens"):
     print(df.to_string(index=False))
 
 
-def long_pairs():
-    """4.8e: paired difference hindsight_long (4.8d) - givens_long (4.8e) per val puzzle, 95% bootstrap over puzzles."""
+def long_pairs(split="val"):
+    """4.8e: paired differences between the long models per puzzle, 95% bootstrap over puzzles.
+    val: hindsight_long - givens_long. test: also each against the supervised model of 4.1."""
     R = Path("results/phase4")
-    dx = pd.read_csv(R / "4.8d" / "hindsight_long_solved_val.csv").set_index("puzzle")
-    dy = pd.read_csv(R / "4.8e" / "givens_long_solved_val.csv").set_index("puzzle").loc[dx.index]
+    runs = {"hindsight_long": R / "4.8d", "givens_long": R / "4.8e", "sft": R / "sft"}
+    pairs = [("hindsight_long", "givens_long")] + ([("sft", "givens_long"), ("sft", "hindsight_long")] if split == "test" else [])
+    d = {n: pd.read_csv(runs[n] / f"{n}_solved_{split}.csv").set_index("puzzle") for n in {x for p in pairs for x in p}}
     rows = []
-    for col in ("valid_4", "valid_16", "valid_81"):
-        for band in ("easy", "medium", "hard"):
-            m = (dx["band"] == band).to_numpy()
-            d = (dx[col].to_numpy() - dy[col].to_numpy())[m].astype(float)
-            lo, hi = bootstrap_ci(d)
-            rows.append({"a": "hindsight_long", "b": "givens_long", "sampler_steps": int(col.split("_")[1]), "band": band,
-                         "n": int(m.sum()), "a_valid": dx[col].to_numpy()[m].mean(), "b_valid": dy[col].to_numpy()[m].mean(),
-                         "a_minus_b": d.mean(), "lo": lo, "hi": hi})
+    for x, y in pairs:
+        dx, dy = d[x], d[y].loc[d[x].index]
+        for col in ("valid_4", "valid_16", "valid_81"):
+            for band in ("easy", "medium", "hard"):
+                m = (dx["band"] == band).to_numpy()
+                diff = (dx[col].to_numpy() - dy[col].to_numpy())[m].astype(float)
+                lo, hi = bootstrap_ci(diff)
+                rows.append({"a": x, "b": y, "sampler_steps": int(col.split("_")[1]), "band": band, "n": int(m.sum()),
+                             "a_valid": dx[col].to_numpy()[m].mean(), "b_valid": dy[col].to_numpy()[m].mean(),
+                             "a_minus_b": diff.mean(), "lo": lo, "hi": hi})
     df = pd.DataFrame(rows).round(4)
-    df.to_csv(R / "4.8e" / "long_pairs.csv", index=False)
+    df.to_csv(R / "4.8e" / ("long_pairs.csv" if split == "val" else f"long_pairs_{split}.csv"), index=False)
     print(df.to_string(index=False))
 
 
@@ -69,11 +73,14 @@ def main():
     ap.add_argument("--pairs", nargs="+", default=["harvest:givens", "hindsight:givens", "hindsight:harvest"])
     ap.add_argument("--pooled", action="store_true")
     ap.add_argument("--long", action="store_true")
+    ap.add_argument("--long-test", action="store_true")
     a = ap.parse_args()
     if a.pooled:
         return pooled()
     if a.long:
         return long_pairs()
+    if a.long_test:
+        return long_pairs("test")
     out = Path("results/phase4") / a.exp
     rows = []
     for pair in a.pairs:
