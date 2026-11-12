@@ -1,6 +1,6 @@
 # 4.9f: is the self-training gain of 4.4 still there after the learning-rate drop?
 
-**Status: setup and predictions, written before the run (2026-11-12).** Seen before writing them: everything up to [4.9e](../4.9e/README.md).
+**Status: done (2026-11-12). Setup and predictions were committed before the run (`ab7a73c`).** Seen before writing them: everything up to [4.9e](../4.9e/README.md).
 
 **Goal.** 4.4: 500 steps at lr 1e-5 on the supervised model's own valid grids for hard puzzles took it from 0.535 to 0.602 on hard test at 4 sampler steps. 4.9e: 4,000 ordinary supervised steps at lr 1e-5 take the same model to 0.634. The 4.4 start had only ever seen lr 3e-4, so its gain may have been the learning rate and not the self-found grids. Question: from the model that already had the drop (`sft_lr1e-5`), does the same self-training step still add something, and more than the same number of supervised steps?
 
@@ -36,3 +36,35 @@ PYTHONPATH=src python -m phase4.finish_pairs --after-drop                      #
 ```
 
 Expected wall-clock: about 30 min per arm with three seeds side by side, two launches, about 1 h in all.
+
+## Results (2026-11-12, 16:41 to 18:23)
+
+Two launches of three seeds side by side: `self` 45 min, `sup` 54 min, then test evaluation; 1 h 42 min in all against the estimated hour (unrelated jobs loaded the machine, load average 34 to 45 during the second launch). Apple M5 24 GB, MPS, torch 2.15.0, float32 (MPS is not bit-deterministic). No thermal warning at either launch change or at the end.
+
+Hard test band (667 puzzles), greedy; seeds pooled per puzzle, paired differences with a 95% bootstrap over puzzles (`results/phase4/4.9f/pairs.csv`):
+
+| hard test | 4 steps | 16 steps |
+|---|---|---|
+| `sft_lr1e-5` (start) | 0.634 | 0.874 |
+| `self`, seeds 0 / 1 / 2 | 0.636 / 0.618 / 0.636 | 0.846 / 0.841 / 0.852 |
+| `self` − start | −0.005 [−0.027, +0.017] | −0.028 [−0.047, −0.011] |
+| `sup`, seeds 0 / 1 / 2 | 0.637 / 0.625 / 0.636 | 0.861 / 0.862 / 0.862 |
+| `sup` − start | −0.002 [−0.021, +0.021] | −0.013 [−0.031, +0.006] |
+| `self` − `sup` | −0.003 [−0.016, +0.010] | −0.016 [−0.027, −0.005] |
+| `self` − `self_diffusion` of 4.4 (0.602 / 0.837) | +0.028 [+0.010, +0.045] | +0.010 [−0.004, +0.024] |
+| start − `self_diffusion` of 4.4 | +0.032 [+0.011, +0.052] | +0.038 [+0.021, +0.055] |
+
+## Predictions against results
+
+1. `self` +0.01 to +0.05 at 4 steps: **not held** (−0.005, interval including zero: no gain).
+2. `sup` 0.00 to +0.05 at 4 steps: **at the bottom edge** (−0.002: no gain).
+3. `self` − `sup` within ±0.03 at 4 steps, zero inside: **held** (−0.003 [−0.016, +0.010]).
+4. Both arms within ±0.02 of the start at 16 steps: **held for `sup`** (−0.013), **not held for `self`** (−0.028, interval below zero).
+5. `self` above the 4.4 arm by at least 0.03 at 4 steps: **just short** (+0.028 [+0.010, +0.045]); all of it is the start, which is already +0.032 above the 4.4 arm.
+
+The second outcome named before the run occurred: neither arm gains at 4 steps.
+
+## What this shows / does not show
+
+- Shows: from a supervised model that already had 4,000 steps at lr 1e-5, the self-training step of 4.4 adds nothing at 4 sampler steps and costs about 0.03 at 16; 500 supervised steps on the same puzzles add nothing either. Together with 4.9e (the lr drop alone ends 0.03 above the 4.4 result at 4 steps and 0.04 at 16), the +0.067 that 4.4 read as a gain from training on the model's own valid grids is accounted for by the low learning rate of that step applied to a model trained at constant 3e-4. The same caveat now applies to the 4.4 ranking of objectives as a whole: all of them started from that model.
+- Does not show: that training on own valid grids can never help (one start, one learning rate, hard band, 500 steps, 4-step rollouts); what the 500-step pass does on top of `givens_lr1e-5` (in 4.9b it added +0.077 before the drop, in 4.9d the drop alone gave +0.057; not run); why `self` loses at 16 steps (hard-band-only grids from 4-step rollouts as targets; not examined). 4.4 itself was not rerun, the comparison is across experiments on the same test puzzles.
