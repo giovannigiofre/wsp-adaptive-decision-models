@@ -76,6 +76,11 @@ main() {
                  cp results/phase4/4.8b/hindsight.csv results/phase4/4.8d/hindsight_long.csv; }
                $PY -m phase4.selfloop --arm hindsight --exp 4.8d --name hindsight_long --rounds 34 --launch-minutes 100
                if [ -f results/phase4/4.8d/hindsight_long.json ]; then $PY -m phase4.selflearn --exp 4.8d --name hindsight_long; fi ;;
+    self-a2-ctrl-long) c="$HOME/dllm-cache/phase4"; mkdir -p "$c/4.8e/givens_long" results/phase4/4.8e
+               [ -f "$c/4.8e/givens_long/state.pt" ] || { cp "$c/4.8b/givens/state.pt" "$c/4.8e/givens_long/state.pt"
+                 cp results/phase4/4.8b/givens.csv results/phase4/4.8e/givens_long.csv; }
+               $PY -m phase4.selfloop --arm givens --exp 4.8e --name givens_long --rounds 34 --launch-minutes 100
+               if [ -f results/phase4/4.8e/givens_long.json ]; then $PY -m phase4.selflearn --exp 4.8e --name givens_long; fi ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
