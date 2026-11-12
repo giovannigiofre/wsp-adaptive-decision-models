@@ -4,6 +4,7 @@ Seeds pooled per puzzle, 95% bootstrap over puzzles. Each arm against its own st
     PYTHONPATH=src python -m phase4.finish_pairs        # results/phase4/4.9c/pairs.csv, val_jumps.csv
     PYTHONPATH=src python -m phase4.finish_pairs --lowlr  # 4.9d: results/phase4/4.9d/pairs.csv, val_rounds.csv
     PYTHONPATH=src python -m phase4.finish_pairs --lowlr-sft  # 4.9e: results/phase4/4.9e/pairs.csv
+    PYTHONPATH=src python -m phase4.finish_pairs --after-drop  # 4.9f: results/phase4/4.9f/pairs.csv
 """
 from __future__ import annotations
 
@@ -107,6 +108,32 @@ def lowlr_sft():
     print(c[c.step >= 40000][["step", "train_loss", "val_loss", "val_solve_hard", "val_solve_medium", "lr"]].round(4).to_string(index=False))
 
 
+def after_drop():
+    """4.9f: self-training and the supervised control from sft_lr1e-5, hard test band, seeds pooled per puzzle."""
+    t, r44 = pd.read_csv(R / "4.9f" / "test_solved.csv"), pd.read_csv(R / "4.4" / "test_solved.csv")
+    assert (t.puzzle == r44.puzzle).all()
+    h = (t.band == "hard").to_numpy()
+    pool = lambda f, pat, S: np.mean([f[pat.format(s=s) + f"|{S}"].to_numpy()[h] for s in range(3)], 0)  # noqa: E731
+    rows = []
+    for S in (4, 16):
+        v = {"self": pool(t, "self_diffusion_seed{s}", S), "sup": pool(t, "supervised_seed{s}", S),
+             "sft_lr1e-5": t[f"start|{S}"].to_numpy()[h].astype(float), "self of 4.4": pool(r44, "self_diffusion_seed{s}", S),
+             "sft": r44[f"start|{S}"].to_numpy()[h].astype(float)}
+        for x, y in (("self", "sft_lr1e-5"), ("sup", "sft_lr1e-5"), ("self", "sup"), ("self", "self of 4.4"), ("self of 4.4", "sft"),
+                     ("sft_lr1e-5", "self of 4.4")):
+            lo, hi = paired_ci(v[x] - v[y])
+            row = {"a": x, "b": y, "sampler_steps": S, "a_test": v[x].mean(), "b_test": v[y].mean(), "a_minus_b": (v[x] - v[y]).mean(),
+                   "lo": lo, "hi": hi}
+            for s in range(3):
+                row[f"a_seed{s}"] = (t[f"{'self_diffusion' if x == 'self' else 'supervised'}_seed{s}|{S}"].to_numpy()[h].mean()
+                                     if x in ("self", "sup") else float("nan"))
+            rows.append(row)
+    df = pd.DataFrame(rows).round(4)
+    df.to_csv(R / "4.9f" / "pairs.csv", index=False)
+    pd.set_option("display.width", 250)
+    print(df.to_string(index=False))
+
+
 if __name__ == "__main__":
     import sys
-    lowlr() if "--lowlr" in sys.argv else lowlr_sft() if "--lowlr-sft" in sys.argv else main()
+    after_drop() if "--after-drop" in sys.argv else lowlr() if "--lowlr" in sys.argv else lowlr_sft() if "--lowlr-sft" in sys.argv else main()

@@ -124,6 +124,13 @@ main() {
                  $PY -m phase4.selflearn --exp 4.9e --name sft_lr1e-5 --split val
                  $PY -m phase4.selflearn --exp 4.9e --name sft_lr1e-5 --split test
                fi ;;
+    # 4.9f the 4.4 self-training step from the supervised model after its lr drop (4.9e); sup: same steps on stored solutions
+    self49f-self|self49f-sup)
+               local R="$PY -m phase3.rl --config configs/phase4_rl_sftlr.yaml --exp 4.9f --seed ${SEED:?set SEED}"
+               case "$what" in
+                 self49f-self) $R ;;
+                 self49f-sup)  $R --set rl.objective=supervised ;;
+               esac ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }

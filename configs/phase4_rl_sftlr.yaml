@@ -1,0 +1,48 @@
+phase: 4
+# Step 4.9f: configs/phase4_rl.yaml with the start replaced by the supervised model after 4,000 steps at lr 1e-5 (4.9e).
+# Read by src/phase3/rl.py; `task: sudoku9` switches data, start and cache.
+task: sudoku9
+base_config: configs/phase4.yaml
+size: medium
+# Hard band, 4 sampler steps, as in 4.4 (greedy test solve of this start: 0.634).
+band: hard
+seeds: [0, 1, 2]
+init:
+  # Relative to ~/dllm-cache/phase4. Step 47,500 of the 4.9e run (4.1 continued at lr 1e-5).
+  checkpoint: 4.9e/sft_lr1e-5/final.pt
+  sha256: f95b9327ae5c4d5a62c18c62740e0ae1cba13eddfbe516179876e0a36cc435ff
+rl:
+  objective: self_diffusion         # wd1 | reinforce | filtered | grpo | self_diffusion | supervised
+  objective_params: {}
+  objective_defaults:    # identical to configs/phase3.yaml
+    wd1:
+      tau: 1.0
+      beta: 1.0
+      floor: null
+    reinforce:
+      normalize: false
+    filtered: {}
+    grpo:
+      epsilon: 0.5
+      kl: 0.04
+    self_diffusion: {}
+    supervised: {}
+  reward: binary
+  ref_mix: 0.0
+  ref_kl: 0.0
+  likelihood: onestep
+  # Phase 3 settings, except rollout_steps (8 on the toy): 4 is the "harder task" of step 4.3.
+  group_size: 8
+  batch_puzzles: 32
+  rollout_temperature: 1.0
+  rollout_strategy: confidence
+  rollout_steps: 4
+  order_temp: 0.0        # 4.5a: > 0 samples the unmasking order in rollouts (Gumbel top-k on log confidence / order_temp)
+  weights_over: group    # 4.5a: group | batch (wd1 softmax over the whole batch, no group skipped)
+  eval_steps_ref: 16     # also report val/test solve rate at the default sampler budget of 4.1 and 4.2
+  prompt_mask_prob: 0.15
+  inner_steps: 4
+  lr: 1.0e-5
+  grad_clip: 1.0
+  max_rl_steps: 500
+  eval_every: 25
