@@ -3,6 +3,7 @@ Seeds pooled per puzzle, 95% bootstrap over puzzles. Each arm against its own st
 
     PYTHONPATH=src python -m phase4.finish_pairs        # results/phase4/4.9c/pairs.csv, val_jumps.csv
     PYTHONPATH=src python -m phase4.finish_pairs --lowlr  # 4.9d: results/phase4/4.9d/pairs.csv, val_rounds.csv
+    PYTHONPATH=src python -m phase4.finish_pairs --lowlr-sft  # 4.9e: results/phase4/4.9e/pairs.csv
 """
 from __future__ import annotations
 
@@ -83,6 +84,29 @@ def lowlr():
     print(r.to_string(index=False))
 
 
+def lowlr_sft():
+    """4.9e: the supervised model continued at lr 1e-5, hard test band, against its start and the 4.9d models."""
+    rd = lambda e, n: pd.read_csv(R / e / f"{n}_solved_test.csv")  # noqa: E731
+    d = {"sft": rd("sft", "sft"), "sft_lr1e-5": rd("4.9e", "sft_lr1e-5"), "givens_lr1e-5": rd("4.9d", "givens_lr1e-5"),
+         "hindsight_lr1e-5": rd("4.9d", "hindsight_lr1e-5")}
+    assert all((v.puzzle == d["sft"].puzzle).all() for v in d.values())
+    rows = []
+    for band in ("hard", "medium"):
+        h = (d["sft"].band == band).to_numpy()
+        for S in (4, 16, 81):
+            v = {k: x[f"valid_{S}"].to_numpy()[h].astype(float) for k, x in d.items()}
+            for x, y in (("sft_lr1e-5", "sft"), ("givens_lr1e-5", "sft_lr1e-5"), ("hindsight_lr1e-5", "sft_lr1e-5")):
+                lo, hi = paired_ci(v[x] - v[y])
+                rows.append({"band": band, "a": x, "b": y, "sampler_steps": S, "a_test": v[x].mean(), "b_test": v[y].mean(),
+                             "a_minus_b": (v[x] - v[y]).mean(), "lo": lo, "hi": hi})
+    df = pd.DataFrame(rows).round(4)
+    df.to_csv(R / "4.9e" / "pairs.csv", index=False)
+    pd.set_option("display.width", 250)
+    print(df.to_string(index=False))
+    c = pd.read_csv(R / "4.9e" / "sft_lr1e-5.csv")
+    print(c[c.step >= 40000][["step", "train_loss", "val_loss", "val_solve_hard", "val_solve_medium", "lr"]].round(4).to_string(index=False))
+
+
 if __name__ == "__main__":
     import sys
-    lowlr() if "--lowlr" in sys.argv else main()
+    lowlr() if "--lowlr" in sys.argv else lowlr_sft() if "--lowlr-sft" in sys.argv else main()

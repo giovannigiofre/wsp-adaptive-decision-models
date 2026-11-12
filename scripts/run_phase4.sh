@@ -114,6 +114,16 @@ main() {
                  $PY -m phase4.selflearn --exp 4.9d --name $n --split val
                  $PY -m phase4.selflearn --exp 4.9d --name $n --split test
                fi ;;
+    # 4.9e the supervised model of 4.1 continued for 4,000 steps at learning rate 1e-5 (the reference for 4.9d)
+    self49e-sft) local c="$HOME/dllm-cache/phase4/4.9e/sft_lr1e-5"; mkdir -p "$c" results/phase4/4.9e
+               [ -f "$c/state.pt" ] || { cp "$HOME/dllm-cache/phase4/sft/sft/state.pt" "$c/state.pt"
+                 cp results/phase4/sft/sft.csv results/phase4/4.9e/sft_lr1e-5.csv; }
+               $PY -m phase4.train --name sft_lr1e-5 --size medium --out results/phase4/4.9e --ckpt-dir "$c" \
+                   --no-plateau --max-steps 47500 --lr 1e-5 --launch-minutes 100
+               if [ -f results/phase4/4.9e/sft_lr1e-5.json ]; then
+                 $PY -m phase4.selflearn --exp 4.9e --name sft_lr1e-5 --split val
+                 $PY -m phase4.selflearn --exp 4.9e --name sft_lr1e-5 --split test
+               fi ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
