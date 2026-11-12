@@ -1,6 +1,6 @@
 # 4.9g: closing check, the push-down term after the learning-rate drop
 
-**Status: setup and predictions, written before the run (2026-11-12).** Seen before writing them: everything up to [4.9f](../4.9f/README.md).
+**Status: done (2026-11-13). Setup and predictions were committed before the run (`d3c2275`).** Seen before writing them: everything up to [4.9f](../4.9f/README.md).
 
 **Goal.** 4.9e and 4.9f: the +0.05 to +0.07 that the three pull-up objectives of [4.4](../4.4/README.md) gained at 4 sampler steps is accounted for by their learning rate (1e-5) applied to a start trained at constant 3e-4. Every arm of 4.4 had that start, so its other reading, that lowering invalid rollouts hurts (plain wd1 −0.030), is also confounded: wd1 may have lost more than the table shows, or the loss may belong to that start. Question: from the supervised model that already had the drop (`sft_lr1e-5`), does plain wd1 still end below the start, and below the same objective without its push-down term?
 
@@ -38,3 +38,43 @@ PYTHONPATH=src python -m phase4.finish_pairs --closing                         #
 ```
 
 Expected wall-clock: 20 to 30 min per arm with three seeds side by side on an idle machine, two launches.
+
+## Results (2026-11-12, 23:24 to 00:05)
+
+Two launches, three seeds side by side each: `wd1` 19 min, `pos` 22 min. Apple M5 24 GB, MPS, torch 2.15.0, float32, seeds 0 to 2 (MPS is not bit-deterministic), code `d3c2275`. No thermal warning; the machine was loaded by other work during the second launch (load 10 to 38).
+
+Hard test band (667 puzzles), valid share, three seeds pooled per puzzle, paired differences with a 95% bootstrap over puzzles (`results/phase4/4.9g/pairs.csv`):
+
+| | 4 steps | seeds | 16 steps |
+|---|---|---|---|
+| start `sft_lr1e-5` | 0.634 | | 0.874 |
+| `wd1` | 0.557 (−0.077 [−0.106, −0.051]) | 0.558, 0.552, 0.562 | 0.824 (−0.051 [−0.071, −0.031]) |
+| `pos` (β = 0) | 0.622 (−0.012 [−0.033, +0.009]) | 0.634, 0.621, 0.612 | 0.855 (−0.019 [−0.036, −0.004]) |
+| `self` (4.9f) | 0.630 | | 0.846 |
+| `sup` (4.9f) | 0.633 | | 0.862 |
+
+`pos` − `wd1`: +0.065 [+0.041, +0.090] at 4 steps, +0.032 [+0.013, +0.049] at 16. `wd1` − `self`: −0.073 [−0.098, −0.047] / −0.023 [−0.040, −0.005]. `pos` − `self`: −0.008 [−0.028, +0.012] / +0.009 [−0.005, +0.023].
+
+Training diagnostics, mean of the first 50 against the last 50 steps, three seeds (`curves.csv`):
+
+| | skipped groups | log p̂ valid | log p̂ invalid | mean reward | hard val, 4 steps |
+|---|---|---|---|---|---|
+| `wd1` | 0.78 → 0.88 | −57.1 → −65.2 | −60.1 → −69.9 | 0.624 → 0.585 | 0.602 → 0.555 |
+| `pos` | 0.79 → 0.80 | −56.9 → −56.6 | | | 0.602 → 0.602 |
+
+About four groups in five have eight equal rewards at this start and carry no weight, so each step learns from six or seven groups of 32.
+
+## Predictions against results
+
+1. `wd1` ends −0.02 to −0.08 below the start at 4 steps, interval below zero: **held**, at the lower edge (−0.077 [−0.106, −0.051]).
+2. `pos` within ±0.02 of the start at 4 steps, interval including zero: **held** (−0.012 [−0.033, +0.009]).
+3. `pos` − `wd1` +0.02 to +0.08 at 4 steps, interval above zero: **held** (+0.065 [+0.041, +0.090]).
+4. 16 steps, `wd1` −0.02 to −0.06 and `pos` between −0.03 and +0.01: **held** (−0.051, −0.019). The `pos` interval at 16 steps excludes zero, which the prediction did not say.
+5. Under `wd1` the log p̂ of valid rollouts falls and the share of skipped groups rises: **held** (−57.1 → −65.2; 0.78 → 0.88).
+
+Neither of the outcomes named in advance as surprising occurred.
+
+## What this shows / does not show
+
+- Shows: from a supervised model that already had its learning-rate drop, plain wd1 with the phase 3 settings loses 0.077 at 4 sampler steps and 0.051 at 16 in 500 steps, in all three seeds, and the same code with the push-down term removed loses 0.012 (interval including zero at 4 steps). The loss of wd1 in 4.4 (−0.030) was therefore not a property of the constant-lr start; on that start it was partly hidden by the gain every low-lr arm received. As in 4.4, the likelihood of the valid rollouts falls together with that of the invalid ones. With 4.9f: on this model nothing tested adds anything at 4 steps (self-training −0.005, more supervised steps −0.002, positive-only wd1 −0.012), and the only clear effect of an RL objective is the damage of the push-down term.
+- Does not show: that a push-down term cannot be made to work. The bounded variants (floor, KL to the start), GRPO, other τ, lr or step counts were not rerun from this start; the likelihood is the one-step estimate; the weights are computed over groups of which four in five are skipped. One start, one model size. The intervals cover puzzle sampling; the three seeds are within 0.01 (`wd1`) and 0.02 (`pos`) of each other. The slight loss of `pos` at 16 steps (−0.019 [−0.036, −0.004]) is within what repeated reads of this test band can produce and is not interpreted.

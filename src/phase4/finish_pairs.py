@@ -5,6 +5,7 @@ Seeds pooled per puzzle, 95% bootstrap over puzzles. Each arm against its own st
     PYTHONPATH=src python -m phase4.finish_pairs --lowlr  # 4.9d: results/phase4/4.9d/pairs.csv, val_rounds.csv
     PYTHONPATH=src python -m phase4.finish_pairs --lowlr-sft  # 4.9e: results/phase4/4.9e/pairs.csv
     PYTHONPATH=src python -m phase4.finish_pairs --after-drop  # 4.9f: results/phase4/4.9f/pairs.csv
+    PYTHONPATH=src python -m phase4.finish_pairs --closing  # 4.9g, 4.9h: results/phase4/4.9g/pairs.csv, 4.9h/pairs.csv
 """
 from __future__ import annotations
 
@@ -134,6 +135,46 @@ def after_drop():
     print(df.to_string(index=False))
 
 
+def closing():
+    """4.9g: wd1 and positive-only from sft_lr1e-5. 4.9h: own valid grids from givens_lr1e-5. Hard test band, seeds pooled."""
+    pool = lambda f, pat, S, h: np.mean([f[pat.format(s=s) + f"|{S}"].to_numpy()[h] for s in range(3)], 0)  # noqa: E731
+    seeds = lambda f, pat, S, h: [f[pat.format(s=s) + f"|{S}"].to_numpy()[h].mean() for s in range(3)]  # noqa: E731
+    pd.set_option("display.width", 250)
+
+    def table(v, per, pairs, out):
+        rows = []
+        for S in (4, 16):
+            for x, y in pairs:
+                lo, hi = paired_ci(v[S][x] - v[S][y])
+                row = {"a": x, "b": y, "sampler_steps": S, "a_test": v[S][x].mean(), "b_test": v[S][y].mean(),
+                       "a_minus_b": (v[S][x] - v[S][y]).mean(), "lo": lo, "hi": hi}
+                for s in range(3):
+                    row[f"a_seed{s}"] = per[S][x][s] if x in per[S] else float("nan")
+                rows.append(row)
+        df = pd.DataFrame(rows).round(4)
+        df.to_csv(out, index=False)
+        print(df.to_string(index=False))
+
+    g, f = pd.read_csv(R / "4.9g" / "test_solved.csv"), pd.read_csv(R / "4.9f" / "test_solved.csv")
+    assert (g.puzzle == f.puzzle).all() and (g["start|4"] == f["start|4"]).all()
+    h = (g.band == "hard").to_numpy()
+    pat = {"wd1": (g, "wd1_beta1_tau1_seed{s}"), "pos": (g, "wd1_beta0_tau1_seed{s}"),
+           "self (4.9f)": (f, "self_diffusion_seed{s}"), "sup (4.9f)": (f, "supervised_seed{s}")}
+    v = {S: {k: pool(d, p, S, h) for k, (d, p) in pat.items()} | {"sft_lr1e-5": g[f"start|{S}"].to_numpy()[h].astype(float)} for S in (4, 16)}
+    per = {S: {k: seeds(d, p, S, h) for k, (d, p) in pat.items()} for S in (4, 16)}
+    table(v, per, (("wd1", "sft_lr1e-5"), ("pos", "sft_lr1e-5"), ("pos", "wd1"), ("wd1", "self (4.9f)"), ("pos", "self (4.9f)"),
+                   ("wd1", "sup (4.9f)")), R / "4.9g" / "pairs.csv")
+
+    t, b = pd.read_csv(R / "4.9h" / "test_solved.csv"), pd.read_csv(R / "4.9b" / "test_solved.csv")
+    assert (t.puzzle == b.puzzle).all() and (t.puzzle == g.puzzle).all()
+    pat = {"self": (t, "self_diffusion_seed{s}"), "self4 (4.9b)": (b, "self_diffusion_seed{s}")}
+    v = {S: {k: pool(d, p, S, h) for k, (d, p) in pat.items()} | {"givens_lr1e-5": t[f"start|{S}"].to_numpy()[h].astype(float),
+             "givens_long": b[f"start|{S}"].to_numpy()[h].astype(float), "sft_lr1e-5": g[f"start|{S}"].to_numpy()[h].astype(float)} for S in (4, 16)}
+    per = {S: {k: seeds(d, p, S, h) for k, (d, p) in pat.items()} for S in (4, 16)}
+    table(v, per, (("self", "givens_lr1e-5"), ("self", "self4 (4.9b)"), ("self", "sft_lr1e-5"), ("givens_lr1e-5", "givens_long"),
+                   ("self", "givens_long")), R / "4.9h" / "pairs.csv")
+
+
 if __name__ == "__main__":
     import sys
-    after_drop() if "--after-drop" in sys.argv else lowlr() if "--lowlr" in sys.argv else lowlr_sft() if "--lowlr-sft" in sys.argv else main()
+    closing() if "--closing" in sys.argv else after_drop() if "--after-drop" in sys.argv else lowlr() if "--lowlr" in sys.argv else lowlr_sft() if "--lowlr-sft" in sys.argv else main()
