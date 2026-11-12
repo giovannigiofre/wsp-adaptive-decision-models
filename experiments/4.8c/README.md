@@ -68,3 +68,10 @@ The negative result named before the run did not occur at 81 steps; it did occur
 
 - Shows: over three training seeds from the same start model, hindsight masks add about +0.07 to the harvest loop on the hard band when the sampler takes 81 steps (one cell per step), in every seed, and nothing measurable at 4 or 16 steps. The 4-step advantage of hindsight over harvest read in 4.8b was a low harvest seed. Against the single control run, both harvest arms stay well ahead at 4 steps (+0.13, +0.15) and hindsight at 81 steps (+0.11); at 16 steps harvest is not distinguishable from the control and hindsight is +0.047 with an interval that just clears zero.
 - Does not show: seed variance of the control or of the start model (one `givens` run, one 4.8a run), so every difference from the control still rests on one control seed. Why hindsight helps only at one cell per step was not examined (the hindsight states have givens masked, which is what the sampler meets late in an 81-step fill only loosely; not tested). Three seeds are a range, not an interval over seeds. Val only, no test evaluation; no plateau.
+
+## Addendum: a second seed of the givens-only control
+
+**Predictions written before the run (2026-11-12).** Seen: everything above, 4.8d, 4.8e. Every difference from the control in 4.8b and 4.8c rests on one `givens` run. `givens_s1`: the same control with `diffusion_training.seed` 1, 10 rounds from the 4.8a state to step 19,546 (`ARM=givens SEED=1 bash scripts/run_phase4.sh self-a2-seed ~/dllm-cache/venv/bin/python`).
+
+1. Hard val at 16 steps at the end: 0.60 to 0.68 (seed 0: 0.650); at 81 steps 0.64 to 0.73 (0.689); at 4 steps 0.17 to 0.27 (0.210).
+2. With the two control seeds pooled, `hindsight` − `givens` on hard keeps an interval above zero at 4 and 81 steps; at 16 steps it stays within ±0.03 of the +0.047 read with one control seed, interval possibly including zero.
