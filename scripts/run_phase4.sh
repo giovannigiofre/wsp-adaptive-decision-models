@@ -81,6 +81,7 @@ main() {
                  cp results/phase4/4.8b/givens.csv results/phase4/4.8e/givens_long.csv; }
                $PY -m phase4.selfloop --arm givens --exp 4.8e --name givens_long --rounds 34 --launch-minutes 100
                if [ -f results/phase4/4.8e/givens_long.json ]; then $PY -m phase4.selflearn --exp 4.8e --name givens_long; fi ;;
+    givens-probe) $PY -m phase4.givens_probe ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
