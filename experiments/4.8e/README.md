@@ -67,3 +67,17 @@ The result named before the run as one that would change the reading of 4.8 occu
 
 - Shows: with the same number of training steps as the supervised plateau, training on the givens alone (no rollouts, no checker, no solutions) reaches 0.76 to 0.78 on the hard val band at 16 sampler steps and 0.85 at 81, as good as or better than the hindsight loop that harvested 98.7% of the hard train solutions (0.73, 0.84). The advantages of the harvest arms read in 4.8b and 4.8c at 19,546 steps (+0.05 at 16 steps, +0.11 at 81, +0.15 at 4) were a head start, not a higher end point: by step 43,546 only the 4-step advantage is left, and it is +0.05 with an interval that includes zero. Predictions 1 to 3, written from the short runs, were all wrong in the same direction.
 - Does not show: seed variance (one run per arm; single rounds move by ±0.02 to 0.03, and the final round is the control's best and one of the hindsight loop's lower ones, so the 16-step difference of the final models overstates the three-round means, 0.755 against 0.730); where either arm ends (the control was still rising, the hindsight loop was flat from about round 20); why the hindsight loop flattens lower (its batches are 75% buffer rows, so it sees a quarter of the givens-loss steps; not separated); anything on the test set, which is the next step.
+
+## Test-set evaluation of the three long models
+
+**Predictions written before the run (2026-11-12).** The final models of supervised 4.1 (`sft`, step 43,500), `hindsight_long` (4.8d) and `givens_long` (4.8e) on the test split (hard band 667 puzzles), valid share at 4, 16, 81 sampler steps, greedy, with paired differences and a 95% bootstrap over puzzles. No model was selected on test; the stop of each run was fixed in advance.
+
+1. The order on hard at 16 steps is supervised > `givens_long` ≥ `hindsight_long`, with `givens_long` − `hindsight_long` between 0.00 and +0.06 (smaller than the +0.051 of val, where the final round favoured the control).
+2. At 81 steps the two label-free models are within ±0.03 of each other.
+3. At 4 steps `hindsight_long` is ahead of `givens_long` by +0.02 to +0.08; supervised is ahead of both.
+4. Supervised minus the better label-free model on hard at 16 steps: +0.02 to +0.08.
+
+```
+for r in "sft sft" "4.8d hindsight_long" "4.8e givens_long"; do set -- $r; PYTHONPATH=src python -m phase4.selflearn --exp $1 --name $2 --split test; done
+PYTHONPATH=src python -m phase4.selfloop_pairs --long-test     # results/phase4/4.8e/long_pairs_test.csv
+```
