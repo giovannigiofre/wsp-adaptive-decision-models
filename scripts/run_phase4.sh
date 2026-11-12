@@ -131,6 +131,15 @@ main() {
                  self49f-self) $R ;;
                  self49f-sup)  $R --set rl.objective=supervised ;;
                esac ;;
+    # 4.9g closing check: plain wd1 and positive-only (beta 0) of 4.4 from the supervised model after its lr drop (4.9e)
+    self49g-wd1|self49g-pos)
+               local R="$PY -m phase3.rl --config configs/phase4_rl_sftlr.yaml --exp 4.9g --seed ${SEED:?set SEED} --set rl.objective=wd1"
+               case "$what" in
+                 self49g-wd1) $R ;;
+                 self49g-pos) $R rl.objective_params.beta=0 ;;
+               esac ;;
+    # 4.9h closing check: the 500-step pass on own valid grids (4.9b) from the givens-only model after its lr drop (4.9d)
+    self49h-self) $PY -m phase3.rl --config configs/phase4_rl_givenslr.yaml --exp 4.9h --seed ${SEED:?set SEED} ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
