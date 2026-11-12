@@ -91,6 +91,14 @@ main() {
                  self49-self16) $R --set rl.harvest_steps=16 ;;
                  self49-ctrl)   $R --set rl.objective=givens ;;
                esac ;;
+    # 4.9c which difference from the long hindsight loop matters: the self4 arm of 4.9b at the loop's learning rate
+    # (3e-4) and at 1e-4, and unchanged from the hindsight_long model of 4.8d. Three seeds side by side per launch.
+    self49c-lr3e-4|self49c-lr1e-4|self49c-hind)
+               local R="$PY -m phase3.rl --config configs/phase4_rl_givens.yaml --exp 4.9c --seed ${SEED:?set SEED}"
+               case "$what" in
+                 self49c-hind) $R --tag _hind --init "$HOME/dllm-cache/phase4/4.8d/hindsight_long/final.pt" ;;
+                 *)            $R --tag "_${what#self49c-}" --set "rl.lr=${what#self49c-lr}" ;;
+               esac ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }
