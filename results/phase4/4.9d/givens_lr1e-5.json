@@ -1,0 +1,52 @@
+{
+ "arm": "givens",
+ "rounds": 38,
+ "final_step": 47546,
+ "start_step": 9546,
+ "final": {
+  "round": 38,
+  "step": 47546,
+  "train_loss": 0.6591310880184174,
+  "tried": 0,
+  "accepted": 0,
+  "buffer_easy": 0.0,
+  "buffer_medium": 0.0,
+  "buffer_hard": 0.0,
+  "val_solve_easy": 1.0,
+  "val_solve_medium": 1.0,
+  "val_solve_hard": 0.8143712282180786,
+  "val4_solve_easy": 1.0,
+  "val4_solve_medium": 0.946107804775238,
+  "val4_solve_hard": 0.45209580659866333,
+  "val_cell_acc": 0.9718495011329651,
+  "elapsed_s": 19605.321898937225
+ },
+ "wall_clock_s": 19605.321898937225,
+ "args": {
+  "config": "configs/phase4.yaml",
+  "size": "medium",
+  "arm": "givens",
+  "exp": "4.9d",
+  "name": "givens_lr1e-5",
+  "init": "4.8a/a1/state.pt",
+  "rounds": 38,
+  "round_steps": 1000,
+  "harvest_steps": 16,
+  "harvest_block": 15000,
+  "givens_share": 0.25,
+  "launch_minutes": 100.0,
+  "lr": 1e-05,
+  "device": null,
+  "set": []
+ },
+ "seed": 0,
+ "env": {
+  "python": "3.12.13",
+  "torch": "2.15.0",
+  "device": "mps",
+  "machine": "arm64",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "torch_threads": 4
+ },
+ "ckpt_dir": "/Users/giovannigiofre/dllm-cache/phase4/4.9d/givens_lr1e-5"
+}

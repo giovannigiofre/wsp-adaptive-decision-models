@@ -1,6 +1,6 @@
 # Diffusion language models on a MacBook: what I learned
 
-Everything below ran on one Apple M5 MacBook with 24 GB of unified memory, using PyTorch on MPS. No cloud GPUs were used. This is a learning exercise, not research: nothing here is a new method, and negative or contrary results are kept as they came out. Details, commands and per-step notes are in `results/phase1/SUMMARY.md`, `results/phase2/SUMMARY.md`, `results/phase3/SUMMARY.md`, `experiments/<id>/README.md`, and the three executed notebooks in `notebooks/`.
+Everything below ran on one Apple M5 MacBook with 24 GB of unified memory, using PyTorch on MPS. No cloud GPUs were used. This is a learning exercise, not research: nothing here is a new method, and negative or contrary results are kept as they came out. Details, commands and per-step notes are in `results/phase1/SUMMARY.md`, `results/phase2/SUMMARY.md`, `results/phase3/SUMMARY.md`, `results/phase4/SUMMARY.md`, `experiments/<id>/README.md`, and the four executed notebooks in `notebooks/`.
 
 ## 1. A real dLLM: LLaDA-8B-Instruct (inference only)
 
@@ -65,6 +65,18 @@ Phase 3 used the toy (about 240 training runs of 1–4 minutes) to find out why 
 
 **Three robustness checks, run after the summary, moved two of these claims.** (i) With a chain-rule likelihood in the loss instead of the one-step proxy, the ranking of wd1, floored wd1 and positive-only is unchanged, but every arm trains worse and plain wd1 ends below its start (val 0.33 at step 1000 against 0.84; 0.53 when the likelihood follows the sampler's own path). The unbounded push down is therefore not an artefact of the proxy; why the crude proxy trains best is not known. (ii) From an earlier start where about 1 rollout in 700 is valid, both "train on your own valid rollouts" objectives learn nothing (0.00) and the floored wd1 reaches 0.99: the most robust objective above is robust only where successes are not too rare. (iii) A reward that ignores the 2×2 boxes changed no true solve rate by more than 0.03. Details and the failed predictions: `experiments/3.6a`–`3.6c`.
 
+## 4. The same questions on 9×9 Sudoku, and training with no solutions
+
+Phase 4 moved to 9×9: 100k generated puzzles in three difficulty bands, a 1.86M-parameter model trained on stored solutions for five hours at a constant learning rate of 3e-4. Numbers below are the share of the 667 hard test puzzles solved, at 4 / 16 / 81 unmasking steps. Every experiment again had predictions committed before it ran; about half were wrong, and five readings were later corrected by further runs (table in `results/phase4/SUMMARY.md`).
+
+**Steps and order matter here.** The supervised model solves 0.535 / 0.814 / 0.871. With a random unmasking order it solves 0.13 at 16 steps; a perfect order would solve every puzzle with the same weights. A failed grid is one or two early wrong cells followed by many that fit them. Given the exact wrong cells, masking and re-predicting them solves 0.91 at 4 passes; with any score the model or the rules provide the gain is at most 0.02, and a linear probe on the frozen model finds six wrong cells in ten where about nine are needed.
+
+**The phase 3 objectives, and what the result turned out to be made of.** From the plateau model at 4 steps (0.535), 500 RL steps at lr 1e-5 gave +0.067 for training on the model's own valid grids, +0.05 for positive-only wd1 and filtered imitation, about +0.01 to +0.02 for bounded wd1 and GRPO, and −0.030 for plain wd1. Follow-ups could not make the push-down term pay (five factors, one at a time) and showed that the pull-up objectives are nearly orthogonal to the exact gradient of the solve rate. Then the control that should have come first: the supervised model continued for 4,000 steps at lr 1e-5 with no RL reaches 0.634 / 0.874 / 0.897, above every RL arm, and from that model the self-training step adds nothing (−0.005 [−0.027, +0.017] at 4 steps, −0.028 at 16). The gain read as "self-training helps" was the low learning rate of the RL step on a model trained at a constant one. From the same model plain wd1 loses 0.077 at 4 steps [−0.106, −0.051] and its positive-only version 0.012 [−0.033, +0.009] (4.9g): once the free gain is gone, the only clear effect of an RL objective on this model is the damage of the push-down term.
+
+![phase 4 overview](phase4/overview_hard_test.png)
+
+**No stored solutions.** A model trained only to put back hidden *printed* digits of the puzzles (no rollouts, no checker, no solution) reaches 0.438 / 0.780 / 0.850 at the supervised step count and 0.495 / 0.807 / 0.895 after the same learning-rate drop. A loop that keeps its own checker-valid grids and trains on them is ahead early (+0.12 to +0.14 at 4 steps on val at 19,546 steps) and not at the end (0.472 / 0.783 / 0.870), although it had found a valid grid for 98.7% of the hard train puzzles. Like for like, stored solutions are worth 0.14 at 4 steps, 0.07 at 16 and nothing at 81; the givens-only deficit is in the first pass on the puzzle as given. On the label-free model after its drop, 500 steps on its own checker-valid grids still add 0.033 at 4 steps [+0.007, +0.060] and nothing at 16 (4.9h, no control arm from that start, run interrupted and resumed), so the last gap is 0.11 / 0.07. This depends on the generator: the givens are a random subset of the cells of a full grid.
+
 ## What surprised me
 - How close LLaDA's default decoding is to left-to-right generation.
 - That fewer denoising steps cost almost nothing at these sizes. Confidence-based adaptive step budgets look like the obvious next thing to try.
@@ -73,6 +85,8 @@ Phase 3 used the toy (about 240 training runs of 1–4 minutes) to find out why 
 - That the explanation was so mechanical: flat weights, an unbounded push down, and one lucky starting snapshot. Changing any one of them changes the ranking.
 - That plain self-training on one's own valid outputs beat every RL objective on the toy.
 - That an oracle unmasking order solves 98% of the puzzles the weak model "cannot" solve.
+- That on 9×9 a learning-rate drop did more than every RL objective, and that about twenty experiments went by before that control was run.
+- That a model never shown a solution, and never told whether its grids were right, ends level with the supervised one when it fills one cell per step.
 
 ## Limitations
 - Phase 1 samples are tiny, GSM8K used 128-token answers instead of 256, and the d1/paper settings were not matched. Phase 1 numbers are not comparable to published ones.
@@ -80,7 +94,10 @@ Phase 3 used the toy (about 240 training runs of 1–4 minutes) to find out why 
 - MPS is not bit-deterministic, and timings were taken on a shared machine (phases 1 and 2 ran concurrently, plus a Docker VM).
 - Phase 3 is the same toy with 3 seeds per setting, one hyper-parameter setting, a one-step likelihood proxy and 1,500-step runs. Its findings are about this task; which of them carry over to a pretrained dLLM with sparse, imperfect rewards is not tested here.
 
+- Phase 4 is one 1.86M-parameter model family and one generator, one training seed per long run and three per short arm; intervals are over puzzles. The hard test band was read many times. One low learning rate, applied as a step change, never tuned. The puzzles are easy by human standards (68% of the hard band falls to naked and hidden singles).
+
 ## Reproduce
 - Phase 1: `scripts/run_phase1.sh`. The grid is resumable; raise `N_SUDOKU`/`N_COUNTDOWN`/`N_GSM8K` to extend the same nested samples. The full spec sizes need roughly 30+ h on this Mac.
 - Phase 2: the commands in `experiments/2.*/README.md` and `scripts/run_phase2_rl.sh`.
 - Phase 3: `bash scripts/run_phase3.sh <experiment id>` for each id in `experiments/3.*/README.md`, then `python -m phase3.analysis <id>`.
+- Phase 4: `bash scripts/run_phase4.sh <step>` with the step named in each `experiments/4.*/README.md`, then the analysis command given there. The long runs take 5 h (supervised) and about 5 h each (label-free), in resumable launches.

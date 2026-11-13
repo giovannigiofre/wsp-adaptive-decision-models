@@ -1,0 +1,7 @@
+a,b,sampler_steps,a_minus_b,lo,hi
+self_diffusion,givens,4,0.063,0.0405,0.086
+self_diffusion,givens,16,0.006,-0.0125,0.025
+self_diffusion_h16,givens,4,0.0695,0.046,0.0935
+self_diffusion_h16,givens,16,0.0105,-0.008,0.029
+self_diffusion_h16,self_diffusion,4,0.0065,-0.0085,0.021
+self_diffusion_h16,self_diffusion,16,0.0045,-0.0085,0.0175

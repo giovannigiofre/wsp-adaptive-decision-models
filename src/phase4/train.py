@@ -57,6 +57,7 @@ def main():
     ap.add_argument("--loss", default="diffusion", choices=["diffusion", "givens"],
                     help="givens (step 4.8): train on masked givens only, stored solutions of the train set zeroed")
     ap.add_argument("--max-steps", type=int, default=None)
+    ap.add_argument("--lr", type=float, default=None, help="4.9e: learning rate set after loading the state (default: keep it)")
     ap.add_argument("--device", default=None)
     ap.add_argument("--out", default="results/phase4/sft")
     ap.add_argument("--ckpt-dir", default=None)
@@ -105,6 +106,9 @@ def main():
         if dev.type == "mps":
             torch.mps.set_rng_state(st["rng_dev"].cpu())
         step0, elapsed0, history = st["step"], st["elapsed_s"], st["history"]
+        if a.lr is not None:
+            from .selfloop import set_lr
+            set_lr(opt, sched, a.lr)
         import pandas as pd
         pd.read_csv(log_path).query("step <= @step0").to_csv(log_path, index=False)
         print(f"resumed {a.name} at step {step0} ({elapsed0 / 60:.1f} min so far)", flush=True)

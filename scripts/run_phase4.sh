@@ -81,6 +81,65 @@ main() {
                  cp results/phase4/4.8b/givens.csv results/phase4/4.8e/givens_long.csv; }
                $PY -m phase4.selfloop --arm givens --exp 4.8e --name givens_long --rounds 34 --launch-minutes 100
                if [ -f results/phase4/4.8e/givens_long.json ]; then $PY -m phase4.selflearn --exp 4.8e --name givens_long; fi ;;
+    givens-probe) $PY -m phase4.givens_probe ;;
+    # 4.9b low-lr training of the givens-only model (4.8e) on its own valid grids; one launch per arm, three seeds
+    # side by side. self4: rollouts with 4 sampler steps (as 4.4); self16: with 16; ctrl: givens loss, checker unused.
+    self49-self4|self49-self16|self49-ctrl)
+               local R="$PY -m phase3.rl --config configs/phase4_rl_givens.yaml --exp 4.9b --seed ${SEED:?set SEED}"
+               case "$what" in
+                 self49-self4)  $R ;;
+                 self49-self16) $R --set rl.harvest_steps=16 ;;
+                 self49-ctrl)   $R --set rl.objective=givens ;;
+               esac ;;
+    # 4.9c which difference from the long hindsight loop matters: the self4 arm of 4.9b at the loop's learning rate
+    # (3e-4) and at 1e-4, and unchanged from the hindsight_long model of 4.8d. Three seeds side by side per launch.
+    self49c-lr3e-4|self49c-lr1e-4|self49c-hind)
+               local R="$PY -m phase3.rl --config configs/phase4_rl_givens.yaml --exp 4.9c --seed ${SEED:?set SEED}"
+               case "$what" in
+                 self49c-hind) $R --tag _hind --init "$HOME/dllm-cache/phase4/4.8d/hindsight_long/final.pt" ;;
+                 *)            $R --tag "_${what#self49c-}" --set "rl.lr=${what#self49c-lr}" ;;
+               esac ;;
+    # 4.9d the two long runs continued for 4 rounds with their own all-band training, learning rate 1e-5 instead of 3e-4
+    self49d-hind|self49d-givens)
+               local c="$HOME/dllm-cache/phase4" arm src n
+               case "$what" in
+                 self49d-hind)   arm=hindsight; src=4.8d/hindsight_long ;;
+                 self49d-givens) arm=givens;    src=4.8e/givens_long ;;
+               esac
+               n="${arm}_lr1e-5"; mkdir -p "$c/4.9d/$n" results/phase4/4.9d
+               [ -f "$c/4.9d/$n/state.pt" ] || { cp "$c/$src/state.pt" "$c/4.9d/$n/state.pt"
+                 cp "results/phase4/$src.csv" "results/phase4/4.9d/$n.csv"; }
+               $PY -m phase4.selfloop --arm $arm --exp 4.9d --name $n --rounds 38 --lr 1e-5 --launch-minutes 100
+               if [ -f "results/phase4/4.9d/$n.json" ]; then
+                 $PY -m phase4.selflearn --exp 4.9d --name $n --split val
+                 $PY -m phase4.selflearn --exp 4.9d --name $n --split test
+               fi ;;
+    # 4.9e the supervised model of 4.1 continued for 4,000 steps at learning rate 1e-5 (the reference for 4.9d)
+    self49e-sft) local c="$HOME/dllm-cache/phase4/4.9e/sft_lr1e-5"; mkdir -p "$c" results/phase4/4.9e
+               [ -f "$c/state.pt" ] || { cp "$HOME/dllm-cache/phase4/sft/sft/state.pt" "$c/state.pt"
+                 cp results/phase4/sft/sft.csv results/phase4/4.9e/sft_lr1e-5.csv; }
+               $PY -m phase4.train --name sft_lr1e-5 --size medium --out results/phase4/4.9e --ckpt-dir "$c" \
+                   --no-plateau --max-steps 47500 --lr 1e-5 --launch-minutes 100
+               if [ -f results/phase4/4.9e/sft_lr1e-5.json ]; then
+                 $PY -m phase4.selflearn --exp 4.9e --name sft_lr1e-5 --split val
+                 $PY -m phase4.selflearn --exp 4.9e --name sft_lr1e-5 --split test
+               fi ;;
+    # 4.9f the 4.4 self-training step from the supervised model after its lr drop (4.9e); sup: same steps on stored solutions
+    self49f-self|self49f-sup)
+               local R="$PY -m phase3.rl --config configs/phase4_rl_sftlr.yaml --exp 4.9f --seed ${SEED:?set SEED}"
+               case "$what" in
+                 self49f-self) $R ;;
+                 self49f-sup)  $R --set rl.objective=supervised ;;
+               esac ;;
+    # 4.9g closing check: plain wd1 and positive-only (beta 0) of 4.4 from the supervised model after its lr drop (4.9e)
+    self49g-wd1|self49g-pos)
+               local R="$PY -m phase3.rl --config configs/phase4_rl_sftlr.yaml --exp 4.9g --seed ${SEED:?set SEED} --set rl.objective=wd1"
+               case "$what" in
+                 self49g-wd1) $R ;;
+                 self49g-pos) $R rl.objective_params.beta=0 ;;
+               esac ;;
+    # 4.9h closing check: the 500-step pass on own valid grids (4.9b) from the givens-only model after its lr drop (4.9d)
+    self49h-self) $PY -m phase3.rl --config configs/phase4_rl_givenslr.yaml --exp 4.9h --seed ${SEED:?set SEED} ;;
     *) echo "unknown launch: $what" >&2; exit 1 ;;
   esac
 }

@@ -1,0 +1,9 @@
+a,b,sampler_steps,a_test,b_test,a_minus_b,lo,hi
+self_diffusion,supervised start (4.1),4,0.5152,0.5352,-0.02,-0.053,0.015
+self_diffusion,supervised + self-training (4.4),4,0.5152,0.6022,-0.087,-0.1195,-0.055
+self_diffusion_h16,supervised start (4.1),4,0.5217,0.5352,-0.0135,-0.046,0.0205
+self_diffusion_h16,supervised + self-training (4.4),4,0.5217,0.6022,-0.0805,-0.1114,-0.0495
+self_diffusion,supervised start (4.1),16,0.7891,0.8141,-0.025,-0.0525,0.0035
+self_diffusion,supervised + self-training (4.4),16,0.7891,0.8366,-0.0475,-0.071,-0.023
+self_diffusion_h16,supervised start (4.1),16,0.7936,0.8141,-0.0205,-0.0495,0.0085
+self_diffusion_h16,supervised + self-training (4.4),16,0.7936,0.8366,-0.043,-0.0685,-0.0175

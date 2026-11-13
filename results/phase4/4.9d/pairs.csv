@@ -1,0 +1,14 @@
+a,b,sampler_steps,a_test,b_test,a_minus_b,lo,hi
+hindsight_lr1e-5,hindsight_long,4,0.4723,0.4228,0.0495,0.0195,0.078
+givens_lr1e-5,givens_long,4,0.4948,0.4378,0.057,0.024,0.09
+hindsight_lr1e-5,givens_lr1e-5,4,0.4723,0.4948,-0.0225,-0.06,0.012
+hindsight_lr1e-5,hind (4.9c),4,0.4723,0.5162,-0.044,-0.0755,-0.016
+givens_lr1e-5,self4 (4.9b),4,0.4948,0.5152,-0.0205,-0.0475,0.0055
+hindsight_lr1e-5,hindsight_long,16,0.7826,0.7766,0.006,-0.021,0.0345
+givens_lr1e-5,givens_long,16,0.8066,0.7796,0.027,-0.0015,0.054
+hindsight_lr1e-5,givens_lr1e-5,16,0.7826,0.8066,-0.024,-0.0525,0.006
+hindsight_lr1e-5,hind (4.9c),16,0.7826,0.7976,-0.015,-0.0375,0.007
+givens_lr1e-5,self4 (4.9b),16,0.8066,0.7891,0.0175,-0.004,0.0385
+hindsight_lr1e-5,hindsight_long,81,0.8696,0.8351,0.0345,0.009,0.0615
+givens_lr1e-5,givens_long,81,0.8951,0.8501,0.045,0.0225,0.0675
+hindsight_lr1e-5,givens_lr1e-5,81,0.8696,0.8951,-0.0255,-0.0495,0.0

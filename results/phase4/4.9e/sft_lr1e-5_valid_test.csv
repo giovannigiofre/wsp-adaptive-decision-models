@@ -1,0 +1,10 @@
+split,sampler_steps,band,n,valid,lo,hi
+test,4,easy,667,1.0,1.0,1.0
+test,4,medium,667,0.976,0.964,0.9865
+test,4,hard,667,0.6342,0.5982,0.6717
+test,16,easy,667,1.0,1.0,1.0
+test,16,medium,667,0.9955,0.9895,1.0
+test,16,hard,667,0.8741,0.8486,0.8981
+test,81,easy,667,1.0,1.0,1.0
+test,81,medium,667,0.9985,0.9955,1.0
+test,81,hard,667,0.8966,0.8741,0.919

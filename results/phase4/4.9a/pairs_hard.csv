@@ -1,0 +1,22 @@
+measure,a,b,a_acc,b_acc,a_minus_b,lo,hi
+m1,givens_long,supervised,0.695,0.7256,-0.0307,-0.0373,-0.0237
+m1,hindsight_long,givens_long,0.6877,0.695,-0.0072,-0.0146,-0.0012
+m1b hidden given,givens_long,supervised,0.2886,0.2672,0.0214,0.005,0.0381
+m1b hidden given,hindsight_long,givens_long,0.2735,0.2886,-0.0151,-0.0355,0.0053
+m1b blank,givens_long,supervised,0.4525,0.4514,0.0011,-0.005,0.0072
+m1b blank,hindsight_long,givens_long,0.4024,0.4525,-0.0502,-0.0577,-0.0427
+m2 0.0,givens_long,supervised,0.695,0.7256,-0.0307,-0.0373,-0.0237
+m2 0.0,hindsight_long,givens_long,0.6877,0.695,-0.0072,-0.0146,-0.0012
+m2 0.25,givens_long,supervised,0.9759,0.9869,-0.011,-0.0145,-0.0077
+m2 0.25,hindsight_long,givens_long,0.9784,0.9759,0.0025,0.0001,0.005
+m2 0.5,givens_long,supervised,0.9991,0.9999,-0.0008,-0.0019,-0.0
+m2 0.5,hindsight_long,givens_long,0.9996,0.9991,0.0005,0.0001,0.0012
+m2 0.75,givens_long,supervised,1.0,1.0,0.0,0.0,0.0
+m2 0.75,hindsight_long,givens_long,1.0,1.0,0.0,0.0,0.0
+m1b blank minus hidden given,supervised,supervised,0.4514,0.2672,0.1842,0.1637,0.2044
+m1b blank minus hidden given,givens_long,givens_long,0.4525,0.2886,0.1639,0.1435,0.1833
+m1b blank minus hidden given,hindsight_long,hindsight_long,0.4024,0.2735,0.1288,0.1076,0.1496
+"m3 puzzles with an error at step 1, 4 steps",givens_long,supervised,0.3263,0.2365,0.0898,0.0479,0.1317
+"m3 puzzles with an error at step 1, 4 steps",hindsight_long,givens_long,0.3743,0.3263,0.0479,0.0,0.0958
+"m3 puzzles with an error at step 1, 16 steps",givens_long,supervised,0.003,0.009,-0.006,-0.015,0.0
+"m3 puzzles with an error at step 1, 16 steps",hindsight_long,givens_long,0.012,0.003,0.009,-0.003,0.024

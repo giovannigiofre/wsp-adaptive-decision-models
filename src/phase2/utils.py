@@ -46,6 +46,13 @@ def get_device(name: str) -> torch.device:
     if name == "mps" and not torch.backends.mps.is_available():
         print("MPS unavailable, falling back to CPU")
         name = "cpu"
+    if name == "mps":
+        # The models here are small (< 10M parameters), but batch sizes that change from step to step (valid
+        # rollouts only, kept groups) make the MPS allocator cache a new set of buffers for each shape: one RL run
+        # reached 5.5 GB, of which 4 GB GPU buffers, and three in parallel pushed a 24 GB Mac into swap. A cap
+        # makes the allocator free its cache before growing; it does not change results. Override with
+        # MPS_MEMORY_FRACTION (fraction of the recommended working set, 0 = no limit).
+        torch.mps.set_per_process_memory_fraction(float(os.environ.get("MPS_MEMORY_FRACTION", "0.25")))
     return torch.device(name)
 
 
