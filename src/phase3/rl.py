@@ -430,6 +430,8 @@ def main():
         row["elapsed_s"] = time.time() - t0
         with open(log_path, "a", newline="") as f:
             csv.DictWriter(f, fields).writerow(row)
+        if dev.type == "mps":   # batch sizes vary per step (P[sel], keep): release cached MPS buffers, results unchanged
+            torch.mps.empty_cache()
     torch.save(model.state_dict(), ck / "final.pt")
     final_val, final_val_s1 = evaluate(val)
     final_test, final_test_s1 = evaluate(test)

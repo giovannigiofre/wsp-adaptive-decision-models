@@ -18,6 +18,10 @@ You are implementing the experiments in this repo. Read `README.md`, `docs/PLAN.
 - Every experiment gets `experiments/<id>/README.md` with: goal, exact command, config path, hardware, torch version, dtype, seed, wall-clock time, result location, and a two-line "what this shows / does not show".
 - Plots: matplotlib, readable labels, saved as PNG in `results/`, small file size.
 
+## Memory (24 GB Mac, several sessions in parallel)
+- Get the device only through `phase2.utils.get_device()`: on MPS it caps the allocator (`MPS_MEMORY_FRACTION`, default 0.25). Without the cap, batch sizes that change per step made one RL run hold 5.5 GB for a 1.86M-parameter model. In training loops whose batch size varies, also call `torch.mps.empty_cache()` once per step.
+- Parallel runs are fine. A few minutes after launching, check `footprint <pid> | head -8`: if `IOAccelerator` is far above weights + optimizer + batch, fix that before launching more.
+
 ## Honesty rules
 - No novelty claims. When a result contradicts a paper, report it and list likely reasons (subset size, settings, hardware), do not tune until it matches.
 - Report intervals (bootstrap or across seeds) when comparing methods.
