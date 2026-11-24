@@ -59,6 +59,20 @@ Spec: [PHASE4_SUDOKU9_DLLM.md](PHASE4_SUDOKU9_DLLM.md). Added after phase 3 to s
 | 4.5 Settings sweeps: screen with one seed, confirm with three | per-arm table of settings tried |
 | 4.7 Write-up | `results/phase4/SUMMARY.md`, reports updated |
 
+## Phase 5: looped masked diffusion and RL that decides how long to think (planned)
+Spec: [PHASE5_LOOPED_DLLM.md](PHASE5_LOOPED_DLLM.md). Literature memo: [LOOPED_LITERATURE.md](LOOPED_LITERATURE.md). Added on 24 Nov 2026 after phase 4 was closed, following the release of looped production models (Inkling 2 Mini, GLM-5.4). Nothing has run.
+
+| Step | Output |
+|---|---|
+| 5.0 `LoopedTinyDLLM`, loop-aware sampler with per-loop readout and block-pass counter, fresh `test5` split | `src/phase5/` + tests, `test5` gate report |
+| 5.1 Replication and gate: dense 6 layers vs dense 3 vs 3-layer looped, cosine schedule | valid share per band × sampler steps × loops |
+| 5.2 Loops vs denoising steps at equal block passes; do loops remove the early wrong cells of 4.4b? | trade-off plot, first-error table |
+| 5.3 Loop trajectory as a wrong-cell detector, against the 4.6b bar | AUROC / recall table, sampler and remask results |
+| 5.4 More loops than in training; fixed-S and input-injection ablations | extrapolation curves |
+| 5.5 RL halting head with a checker reward and a compute cost, vs entropy-drop / hidden-change / oracle rules at matched compute (main experiment) | Pareto plot, where loops are spent |
+| 5.6 Converting the dense model into a looped one: SFT vs label-free vs RL, each with a no-loop control | paired table |
+| 5.7 Write-up | `results/phase5/SUMMARY.md` |
+
 ## Final deliverable
 - Clean repo with reproducible commands per experiment.
 - `results/REPORT.md`: 2–4 pages, 4–6 figures, what I learned, what surprised me, limitations.

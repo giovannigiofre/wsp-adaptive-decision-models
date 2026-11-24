@@ -14,11 +14,12 @@ This is **not** a research paper and makes no novelty claims. The goal is to lea
 | 2 | Train a tiny masked diffusion model from scratch on 4×4 Sudoku, then fine-tune it with RL using a hand-written implementation of the wd1 weighted policy objective; compare accuracy and confidence before/after RL | Training, MPS | [docs/PHASE2_TOY_SUDOKU_DLLM.md](docs/PHASE2_TOY_SUDOKU_DLLM.md) |
 | 3 | Use the toy model as an RL playground: take wd1 apart, compare it with simpler objectives, reward honest confidence, learn the unmasking order | Training, MPS | [docs/PHASE3_RL_PLAYGROUND.md](docs/PHASE3_RL_PLAYGROUND.md) |
 | 4 | Scale the toy to 9×9 Sudoku (1.86M parameters, 100k generated puzzles): redo the RL comparison where sampler steps matter, look at where rollouts fail, and train with no stored solutions (printed digits only, then a rule checker) | Training, MPS | [docs/PHASE4_SUDOKU9_DLLM.md](docs/PHASE4_SUDOKU9_DLLM.md) |
+| 5 (planned) | Looped denoiser (one block run S times per denoising step): replicate the known parameter-efficiency result, test loops against early wrong cells and as an error signal, then let RL with a checker reward decide how many loops to run at each step | Training, MPS | [docs/PHASE5_LOOPED_DLLM.md](docs/PHASE5_LOOPED_DLLM.md), literature [docs/LOOPED_LITERATURE.md](docs/LOOPED_LITERATURE.md) |
 
 Overall plan, timeline and deliverables: [docs/PLAN.md](docs/PLAN.md). Reading list: [docs/REFERENCES.md](docs/REFERENCES.md).
 
 ## Status
-**Finished (November 2026).** All four phases have run end to end (phase 1 on pilot-sized samples) and no further experiments are planned.
+**Phases 1–4 finished (November 2026)**, all run end to end (phase 1 on pilot-sized samples). **Phase 5 planned on 24 Nov 2026, not started:** see [docs/PHASE5_LOOPED_DLLM.md](docs/PHASE5_LOOPED_DLLM.md).
 
 Where to start:
 - [results/REPORT_SIMPLE.md](results/REPORT_SIMPLE.md): a plain-language tour of all four phases.
