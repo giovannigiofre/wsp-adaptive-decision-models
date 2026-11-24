@@ -1,0 +1,61 @@
+# Phase 5 (draft, 24 Nov 2026): looped masked diffusion on 9x9 Sudoku. Spec: docs/PHASE5_LOOPED_DLLM.md
+# Nothing has run with this file. Values marked "plan" are from the spec and may be revised before 5.1,
+# with the change recorded in experiments/5.1/README.md.
+phase: 5
+seeds: [0, 1, 2]
+data:
+  cache_dir: ~/dllm-cache/phase4      # train / val as phase 4
+  test5:                              # fresh test split, read only for final numbers (spec 5.0)
+    cache_dir: ~/dllm-cache/phase5
+    generator_seed: 5
+    per_band: 667
+    bands: {easy: [30, 40], medium: [41, 50], hard: [51, 56]}
+model:
+  grid_n: 9
+  d_model: 160
+  n_heads: 4
+  dropout: 0.1
+  pos_embedding: structured
+  inject: false                       # add prelude output to the core input at every loop (ablation in 5.4)
+arms:                                 # 5.1; layer passes per forward = prelude + core * S + coda
+  D6: {prelude: 6, core: 0, coda: 0, s_max: 1}
+  D3: {prelude: 3, core: 0, coda: 0, s_max: 1}
+  L3: {prelude: 1, core: 1, coda: 1, s_max: 6, s_sampling: uniform}
+diffusion_training:
+  t_min: 0.05
+  loss_weight: inverse_t
+  batch_size: 256
+  lr: 3.0e-4
+  warmup_steps: 500
+  schedule: cosine                    # decays to 0 at max_steps: no constant-lr tail (phase 4 confound)
+  max_steps: 30000
+  weight_decay: 0.01
+  grad_clip: 1.0
+  eval_every: 1000
+  eval_strategy: confidence
+  eval_sampler_steps: 16
+eval:
+  sampler_steps: [4, 16, 81]
+  loops: [1, 2, 3, 4, 5, 6, 7, 8]
+  loops_extrapolation: [6, 8, 12, 16, 24]   # 5.4
+halting_rl:                           # 5.5a
+  freeze_denoiser: true
+  s_max: 8
+  lambda_compute: [0.0, 0.1, 0.3]
+  floor_arm: {min_loops: 2, lambda_compute: 0.3}
+  sampler_steps: [4, 16]
+  puzzles_per_step: 32
+  group_size: 8
+  lr_head: 1.0e-3
+  entropy_bonus: 0.001
+  steps: 1000
+  collapse_rule: {mean_loops: 1.0, tol: 0.05, last_steps: 200}
+conversion:                           # 5.6
+  start: D6
+  looped_layers: [2, 3]               # zero-based, run twice
+  steps: 2000
+  lr: 3.0e-5
+  schedule: cosine
+  arms: [free, sft, self, pos, sft-ctrl, self-ctrl]
+runtime:
+  device: mps

@@ -1,6 +1,6 @@
 # Instructions for Claude Code
 
-You are implementing the experiments in this repo. Read `README.md`, `docs/PLAN.md`, then the phase spec you are working on (`docs/PHASE1_LLADA_ON_MAC.md`, `docs/PHASE2_TOY_SUDOKU_DLLM.md` or `docs/PHASE3_RL_PLAYGROUND.md`) before writing code.
+You are implementing the experiments in this repo. Read `README.md`, `docs/PLAN.md`, then the phase spec you are working on (`docs/PHASE1_LLADA_ON_MAC.md`, `docs/PHASE2_TOY_SUDOKU_DLLM.md`, `docs/PHASE3_RL_PLAYGROUND.md`, `docs/PHASE4_SUDOKU9_DLLM.md` or `docs/PHASE5_LOOPED_DLLM.md`) before writing code. For phase 5 also read `docs/LOOPED_LITERATURE.md`.
 
 ## Hard constraints
 - Runs **only on the local MacBook** (Apple Silicon, 24 GB). Use `torch` with `mps`, falling back to `cpu` per-op or per-run when MPS fails. Never suggest or set up cloud GPUs.
